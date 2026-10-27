@@ -101,7 +101,7 @@ public class PepperAnimator : MonoBehaviour
         health.OnDied -= HandleDied;
     }
 
-    private void HandleDamaged() => hurtLockUntil = Time.time + hurtLockDuration;
+    private void HandleDamaged(Vector2 sourcePosition) => hurtLockUntil = Time.time + hurtLockDuration;
 
     private void HandleDied() => isDead = true;
 

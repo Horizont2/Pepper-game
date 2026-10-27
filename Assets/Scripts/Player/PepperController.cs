@@ -54,12 +54,27 @@ public class PepperController : MonoBehaviour
     private bool isFacingRight = true;
 
     private bool canDash = true;
+    private float dashReadyTime;
     private LayerMask excludeLayersBeforeDash;
 
     // Read by PepperAnimator and other systems
     public bool IsDashing { get; private set; }
     public bool IsGrounded { get; private set; }
     public bool IsFacingRight => isFacingRight;
+
+    /// <summary>0 while the dash has just been spent, 1 when it is ready again. Drives the HUD slot.</summary>
+    public float DashCooldownProgress
+    {
+        get
+        {
+            if (canDash) return 1f;
+
+            float total = dashDuration + dashCooldown;
+            if (total <= 0f) return 1f;
+
+            return Mathf.Clamp01(1f - (dashReadyTime - Time.time) / total);
+        }
+    }
 
     private void Awake()
     {
@@ -211,6 +226,7 @@ public class PepperController : MonoBehaviour
     private IEnumerator PerformDash()
     {
         canDash = false;
+        dashReadyTime = Time.time + dashDuration + dashCooldown;
         IsDashing = true;
 
         float originalGravity = rb.gravityScale;

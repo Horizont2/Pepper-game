@@ -94,7 +94,7 @@ public class PepperCombat : MonoBehaviour
             HealthComponent health = enemy.GetComponent<HealthComponent>();
             if (health == null) continue;
 
-            health.TakeDamage(attackDamage);
+            health.TakeDamage(attackDamage, transform.position);
             hitSuccessful = true;
         }
 

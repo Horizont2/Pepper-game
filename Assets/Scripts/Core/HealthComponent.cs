@@ -18,21 +18,29 @@ public class HealthComponent : MonoBehaviour
     // window already open, making everything immune for the first second of play.
     private float lastDamageTime = float.NegativeInfinity;
 
-    // Events for UI, audio, and animation systems to subscribe to
+    /// <summary>Current and max health, for UI to bind to.</summary>
     public event Action<int, int> OnHealthChanged;
+
+    /// <summary>Raised on a hit that landed. Carries the world position the hit came
+    /// from, so knockback and directional effects know which way to push.</summary>
+    public event Action<Vector2> OnDamaged;
+
     public event Action OnDied;
-    public event Action OnDamaged;
 
     public int CurrentHealth => currentHealth;
     public int MaxHealth => maxHealth;
     public bool IsAlive => currentHealth > 0;
+    public float HealthFraction => maxHealth > 0 ? (float)currentHealth / maxHealth : 0f;
 
     private void Awake()
     {
         currentHealth = maxHealth;
     }
 
-    public void TakeDamage(int damageAmount)
+    /// <summary>Damage with no known source - knockback will have no direction.</summary>
+    public void TakeDamage(int damageAmount) => TakeDamage(damageAmount, transform.position);
+
+    public void TakeDamage(int damageAmount, Vector2 sourcePosition)
     {
         // Already dead - do not fire OnDied a second time
         if (!IsAlive) return;
@@ -43,8 +51,7 @@ public class HealthComponent : MonoBehaviour
         currentHealth = Mathf.Clamp(currentHealth - damageAmount, 0, maxHealth);
         lastDamageTime = Time.time;
 
-        // Trigger events
-        OnDamaged?.Invoke();
+        OnDamaged?.Invoke(sourcePosition);
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
 
         if (currentHealth <= 0)
