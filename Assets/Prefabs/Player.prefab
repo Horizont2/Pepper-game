@@ -242,7 +242,6 @@ MonoBehaviour:
   dashDuration: 0.15
   dashCooldown: 1
   dashTrail: {fileID: 6163053312243942349}
-  dashAnimName: Dash
 --- !u!114 &3652982717926528586
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -258,11 +257,11 @@ MonoBehaviour:
   attackDamage: 25
   attackRate: 2
   attackRange: 0.6
+  attackDuration: 0.4
+  attackWindup: 0.12
   hitStopDuration: 0.05
   shakeDuration: 0.1
   shakeMagnitude: 0.15
-  animator: {fileID: 734407029016407236}
-  attackAnimName: Attack
   attackPoint: {fileID: 5431404032627540855}
   enemyLayers:
     serializedVersion: 2
@@ -332,8 +331,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PepperAnimator
   idleAnimName: Idle
   runAnimName: Run
-  jumpAnimName: Jump
+  jumpAnimName: jump
   fallAnimName: Fall
+  attackAnimName: Attack
+  dashAnimName: Dash
+  hurtAnimName: Hurt
+  deathAnimName: Death
+  verticalThreshold: 0.1
+  horizontalThreshold: 0.1
+  hurtLockDuration: 0.25
 --- !u!1 &7508184891571263944
 GameObject:
   m_ObjectHideFlags: 0

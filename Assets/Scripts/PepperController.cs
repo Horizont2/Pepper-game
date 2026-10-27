@@ -1,6 +1,11 @@
 using System.Collections;
 using UnityEngine;
 
+/// <summary>
+/// Pepper movement: acceleration/deceleration, jump with the usual game-feel helpers
+/// (coyote time, jump buffering, variable jump height) and a dash.
+/// Does NOT drive animations - PepperAnimator owns those.
+/// </summary>
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(Collider2D))]
 public class PepperController : MonoBehaviour
@@ -18,7 +23,9 @@ public class PepperController : MonoBehaviour
     [SerializeField] private float jumpCooldown = 0.2f;
 
     [Header("AAA Polish (Game Feel)")]
+    [Tooltip("Grace period after walking off a ledge where a jump still counts.")]
     [SerializeField] private float coyoteTime = 0.15f;
+    [Tooltip("How long an early jump press is remembered before landing.")]
     [SerializeField] private float jumpBufferTime = 0.1f;
 
     [Header("Ground Detection")]
@@ -31,34 +38,32 @@ public class PepperController : MonoBehaviour
     [SerializeField] private float dashDuration = 0.15f;
     [SerializeField] private float dashCooldown = 1f;
     [SerializeField] private TrailRenderer dashTrail;
-    [SerializeField] private string dashAnimName = "Pepper_Dash";
 
     private Rigidbody2D rb;
     private Collider2D playerCollider;
-    private Animator animator;
-    private PepperCombat combat; // <-- ������ ��������� �� ������ �������
+    private PepperCombat combat; // used to know whether an attack is in progress
 
     private float horizontalInput;
     private float coyoteTimeCounter;
     private float jumpBufferCounter;
     private float jumpCooldownTimer;
-    private bool isGrounded;
     private bool isFacingRight = true;
 
     private bool canDash = true;
-    private bool isDashing = false;
-    private int dashAnimHash;
     private int enemyLayerIndex;
+
+    // Read by PepperAnimator and other systems
+    public bool IsDashing { get; private set; }
+    public bool IsGrounded { get; private set; }
+    public bool IsFacingRight => isFacingRight;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         playerCollider = GetComponent<Collider2D>();
-        animator = GetComponent<Animator>();
-        combat = GetComponent<PepperCombat>(); // <-- ��������� ������ ��� �� ����� � ��'���
+        combat = GetComponent<PepperCombat>();
 
         rb.freezeRotation = true;
-        dashAnimHash = Animator.StringToHash(dashAnimName);
         enemyLayerIndex = LayerMask.NameToLayer("Enemy");
 
         if (dashTrail != null) dashTrail.emitting = false;
@@ -66,13 +71,13 @@ public class PepperController : MonoBehaviour
 
     private void Update()
     {
-        if (isDashing) return;
+        if (IsDashing) return;
 
-        // ������� �������� ������, ���� ������� �����
+        // The Pepper is rooted while attacking, so movement input is ignored
         if (combat != null && combat.IsAttacking)
         {
             horizontalInput = 0f;
-            jumpBufferCounter = 0f; // ����������� �������� ������� �� ��� �����
+            jumpBufferCounter = 0f; // and a jump press must not queue up during the swing
         }
         else
         {
@@ -82,7 +87,7 @@ public class PepperController : MonoBehaviour
         UpdateTimers();
         CheckEnvironment();
 
-        // ���������� ������� ����� ���� �� �������
+        // No jumping out of an attack
         if (combat == null || !combat.IsAttacking)
         {
             HandleJump();
@@ -93,10 +98,10 @@ public class PepperController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (isDashing) return;
+        if (IsDashing) return;
 
-        // ���� ������� � ����� �� ���� � ���� ����������� (����-����)
-        if (combat != null && combat.IsAttacking && isGrounded)
+        // Grounded attack kills horizontal speed entirely, which gives the swing weight
+        if (combat != null && combat.IsAttacking && IsGrounded)
         {
             rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
         }
@@ -129,7 +134,7 @@ public class PepperController : MonoBehaviour
         jumpBufferCounter -= Time.deltaTime;
         jumpCooldownTimer -= Time.deltaTime;
 
-        if (isGrounded && jumpCooldownTimer <= 0f)
+        if (IsGrounded && jumpCooldownTimer <= 0f)
         {
             coyoteTimeCounter = coyoteTime;
         }
@@ -141,7 +146,7 @@ public class PepperController : MonoBehaviour
 
     private void CheckEnvironment()
     {
-        isGrounded = Physics2D.OverlapBox(groundCheck.position, groundCheckSize, 0f, groundLayer);
+        IsGrounded = Physics2D.OverlapBox(groundCheck.position, groundCheckSize, 0f, groundLayer);
     }
 
     private void HandleMovement()
@@ -156,7 +161,7 @@ public class PepperController : MonoBehaviour
 
     private void ApplyFriction()
     {
-        if (isGrounded && Mathf.Abs(horizontalInput) < 0.01f)
+        if (IsGrounded && Mathf.Abs(horizontalInput) < 0.01f)
         {
             float amount = Mathf.Min(Mathf.Abs(rb.linearVelocity.x), Mathf.Abs(frictionAmount));
             amount *= Mathf.Sign(rb.linearVelocity.x);
@@ -177,6 +182,7 @@ public class PepperController : MonoBehaviour
         }
     }
 
+    /// <summary>Fall faster than we rise, and cut the jump short when the button is released.</summary>
     private void ApplyBetterGravity()
     {
         if (rb.linearVelocity.y < 0)
@@ -206,7 +212,7 @@ public class PepperController : MonoBehaviour
     private IEnumerator PerformDash()
     {
         canDash = false;
-        isDashing = true;
+        IsDashing = true;
 
         float originalGravity = rb.gravityScale;
         rb.gravityScale = 0f;
@@ -215,8 +221,8 @@ public class PepperController : MonoBehaviour
         rb.linearVelocity = new Vector2(dashDirection * dashForce, 0f);
 
         if (dashTrail != null) dashTrail.emitting = true;
-        if (animator != null) animator.Play(dashAnimHash, 0, 0f);
 
+        // Pass through enemies for the duration of the dash (i-frames)
         if (playerCollider != null && enemyLayerIndex > -1)
         {
             playerCollider.excludeLayers |= (1 << enemyLayerIndex);
@@ -234,7 +240,7 @@ public class PepperController : MonoBehaviour
         rb.gravityScale = originalGravity;
         rb.linearVelocity = new Vector2(rb.linearVelocity.x * 0.5f, rb.linearVelocity.y);
 
-        isDashing = false;
+        IsDashing = false;
 
         yield return new WaitForSeconds(dashCooldown);
         canDash = true;

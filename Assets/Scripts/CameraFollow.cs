@@ -1,5 +1,11 @@
 using UnityEngine;
 
+/// <summary>
+/// Smooth follow camera with optional level bounds.
+/// Owns the camera position: effects such as screen shake must not write to the
+/// transform themselves (this script would overwrite them every frame). They push
+/// an additive offset through <see cref="SetShakeOffset"/> instead.
+/// </summary>
 public class CameraFollow : MonoBehaviour
 {
     [Header("Target")]
@@ -20,11 +26,20 @@ public class CameraFollow : MonoBehaviour
     private float camHalfHeight;
     private float camHalfWidth;
 
+    // The clean, un-shaken position. Shake is added on top of it at render time so
+    // that it never feeds back into the smoothing.
+    private Vector3 basePosition;
+    private Vector3 shakeOffset;
+
     private void Start()
     {
         cam = GetComponent<Camera>();
+        basePosition = transform.position;
         CalculateCameraBounds();
     }
+
+    /// <summary>Additive offset applied on top of the follow position, in world units.</summary>
+    public void SetShakeOffset(Vector3 offset) => shakeOffset = offset;
 
     private void CalculateCameraBounds()
     {
@@ -64,6 +79,9 @@ public class CameraFollow : MonoBehaviour
             targetPosition = new Vector3(clampedX, clampedY, targetPosition.z);
         }
 
-        transform.position = Vector3.SmoothDamp(transform.position, targetPosition, ref velocity, smoothTime);
+        // Smooth on the clean position, then add shake - otherwise the shake would
+        // pollute SmoothDamp's velocity and drag the camera around.
+        basePosition = Vector3.SmoothDamp(basePosition, targetPosition, ref velocity, smoothTime);
+        transform.position = basePosition + shakeOffset;
     }
 }
