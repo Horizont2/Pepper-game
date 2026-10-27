@@ -15,6 +15,9 @@ public class PepperCombat : MonoBehaviour
     [SerializeField] private LayerMask enemyLayers;
     [Tooltip("Lives on the Main Camera, so this is assigned on the scene instance, not the prefab.")]
     [SerializeField] private GameFeelManager gameFeel;
+    [Tooltip("Optional burst played where the swing connects. A child of attackPoint, so it " +
+             "already sits in the right place and needs no spawning.")]
+    [SerializeField] private ParticleSystem hitEffect;
 
     [Header("Combat Settings")]
     [SerializeField] private int attackDamage = 25;
@@ -67,10 +70,17 @@ public class PepperCombat : MonoBehaviour
         // 3. Hitbox opens for one frame
         bool hitSuccessful = ApplyDamageInRange();
 
-        // 4. Impact feedback (hit stop + camera shake)
-        if (hitSuccessful && gameFeel != null)
+        // 4. Impact feedback (hit stop + camera shake + burst)
+        if (hitSuccessful)
         {
-            gameFeel.TriggerHitImpact(hitStopDuration, shakeDuration, shakeMagnitude);
+            if (gameFeel != null) gameFeel.TriggerHitImpact(hitStopDuration, shakeDuration, shakeMagnitude);
+
+            if (hitEffect != null)
+            {
+                // Restart rather than queue: two quick hits should each get their own burst
+                hitEffect.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                hitEffect.Play(true);
+            }
         }
 
         // 5. Play out the rest of the swing
