@@ -22,6 +22,8 @@ public class EnemyDeath : MonoBehaviour
     [SerializeField] private SpriteRenderer spriteRenderer;
     [Tooltip("Inactive child holding the death burst sprite and its animator. Enabled on death.")]
     [SerializeField] private GameObject deathFx;
+    [Tooltip("Optional second inactive child holding a particle burst. Enabled on death too.")]
+    [SerializeField] private GameObject deathParticles;
 
     [Header("Timing")]
     [Tooltip("How long the burst plays before the object is cleared away.")]
@@ -58,7 +60,9 @@ public class EnemyDeath : MonoBehaviour
 
         if (hideBodyOnDeath && spriteRenderer != null) spriteRenderer.enabled = false;
 
+        // Both bursts ship inactive on the prefab and start themselves when switched on
         if (deathFx != null) deathFx.SetActive(true);
+        if (deathParticles != null) deathParticles.SetActive(true);
 
         StartCoroutine(DestroyAfterDelay());
     }

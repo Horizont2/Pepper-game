@@ -19,6 +19,8 @@ public class PepperParry : MonoBehaviour
     [Tooltip("Centre of the stagger burst. The AttackPoint transform works well.")]
     [SerializeField] private Transform parryPoint;
     [SerializeField] private LayerMask enemyLayers;
+    [Tooltip("Checked so a parry cannot start out of a swing. Both are committed actions.")]
+    [SerializeField] private PepperCombat combat;
     [Tooltip("Lives on the Main Camera, so this is assigned on the scene instance, not the prefab.")]
     [SerializeField] private GameFeelManager gameFeel;
     [Tooltip("Optional burst on a successful parry. A child of the Pepper, so it needs no spawning.")]
@@ -77,6 +79,10 @@ public class PepperParry : MonoBehaviour
 
         if (parryPoint == null)
             Debug.LogWarning($"[PepperParry] parryPoint is not assigned on '{name}'; a successful parry will not stagger anything.", this);
+
+        // Cartoon FX systems ship with Play On Awake set, so they would fire once on
+        // load. Clear it here rather than unticking it on every sub-emitter by hand.
+        if (parryEffect != null) parryEffect.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
     }
 
     private void OnEnable()
@@ -92,6 +98,9 @@ public class PepperParry : MonoBehaviour
     private void Update()
     {
         if (IsBusy || !canParry) return;
+
+        // No parrying out of a swing - the attack is a commitment, that is its cost
+        if (combat != null && combat.IsAttacking) return;
 
         if (Input.GetButtonDown("Fire2"))
         {

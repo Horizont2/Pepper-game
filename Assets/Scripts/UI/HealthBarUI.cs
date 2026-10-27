@@ -30,10 +30,21 @@ public class HealthBarUI : MonoBehaviour
 
     private float targetFraction = 1f;
     private float trailHoldUntil;
+    private bool hasStarted;
 
     private void OnEnable()
     {
         Subscribe(target);
+
+        // Snapping here on the first pass would read the target before its own Awake has
+        // necessarily run, so its health is still 0 and the bar starts empty. Every Awake
+        // is done by the time Start runs, so the first snap waits for that.
+        if (hasStarted) SnapToTarget();
+    }
+
+    private void Start()
+    {
+        hasStarted = true;
         SnapToTarget();
     }
 

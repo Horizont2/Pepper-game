@@ -13,6 +13,8 @@ public class PepperCombat : MonoBehaviour
     [Tooltip("Empty transform marking where the attack hitbox is centred.")]
     [SerializeField] private Transform attackPoint;
     [SerializeField] private LayerMask enemyLayers;
+    [Tooltip("Checked so a swing cannot start out of a parry. Both are committed actions.")]
+    [SerializeField] private PepperParry parry;
     [Tooltip("Lives on the Main Camera, so this is assigned on the scene instance, not the prefab.")]
     [SerializeField] private GameFeelManager gameFeel;
     [Tooltip("Optional burst played where the swing connects. A child of attackPoint, so it " +
@@ -45,12 +47,18 @@ public class PepperCombat : MonoBehaviour
 
         if (gameFeel == null)
             Debug.LogWarning($"[PepperCombat] gameFeel is not assigned on '{name}'; hits will land without hit stop or shake.", this);
+
+        // Cartoon FX systems ship with Play On Awake set, so they would fire once on
+        // load. Clear it here rather than unticking it on every sub-emitter by hand.
+        if (hitEffect != null) hitEffect.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
     }
 
     private void Update()
     {
-        // Already swinging - ignore any new attack input
+        // Already committed to a swing or a parry - ignore new attack input.
+        // Without the parry check both run at once and the Pepper attacks while blocking.
         if (IsAttacking) return;
+        if (parry != null && parry.IsBusy) return;
 
         if (Time.time >= nextAttackTime && Input.GetButtonDown("Fire1"))
         {
