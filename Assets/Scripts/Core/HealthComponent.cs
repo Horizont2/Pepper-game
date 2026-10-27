@@ -27,6 +27,14 @@ public class HealthComponent : MonoBehaviour
 
     public event Action OnDied;
 
+    /// <summary>
+    /// Lets a defensive move cancel a hit before any of it is applied - a parry today,
+    /// a shield later. Each subscriber is asked in turn and the first to return true
+    /// absorbs the hit entirely: no health lost, no i-frames spent, no events raised.
+    /// Subscribers hold this component in a serialised field and register in OnEnable.
+    /// </summary>
+    public event Func<Vector2, bool> DamageAbsorber;
+
     public int CurrentHealth => currentHealth;
     public int MaxHealth => maxHealth;
     public bool IsAlive => currentHealth > 0;
@@ -44,6 +52,16 @@ public class HealthComponent : MonoBehaviour
     {
         // Already dead - do not fire OnDied a second time
         if (!IsAlive) return;
+
+        // Ask defensive moves first, before i-frames: a parry should pay out even if
+        // the player happened to still be invulnerable from the previous hit.
+        if (DamageAbsorber != null)
+        {
+            foreach (Delegate subscriber in DamageAbsorber.GetInvocationList())
+            {
+                if (((Func<Vector2, bool>)subscriber).Invoke(sourcePosition)) return;
+            }
+        }
 
         // Check for invulnerability frames (I-frames) to prevent instant multi-hits
         if (Time.time - lastDamageTime < invulnerabilityDuration) return;

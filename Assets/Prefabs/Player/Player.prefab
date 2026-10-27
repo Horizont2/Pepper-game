@@ -79,6 +79,7 @@ GameObject:
   - component: {fileID: 4415461030121459628}
   - component: {fileID: 4546900063531101816}
   - component: {fileID: 6155688484261038520}
+  - component: {fileID: 2370418495893030951}
   m_Layer: 8
   m_Name: Player
   m_TagString: Untagged
@@ -227,6 +228,7 @@ MonoBehaviour:
   rb: {fileID: 6704684622186390054}
   playerCollider: {fileID: 4415461030121459628}
   combat: {fileID: 3652982717926528586}
+  parry: {fileID: 2370418495893030951}
   moveSpeed: 10
   acceleration: 13
   deceleration: 16
@@ -352,6 +354,32 @@ MonoBehaviour:
   verticalThreshold: 0.1
   horizontalThreshold: 0.1
   hurtLockDuration: 0.25
+--- !u!114 &2370418495893030951
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4795655891724114621}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f49c77e50fd4ceb921ae137f17972ac, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PepperParry
+  health: {fileID: 4546900063531101816}
+  parryPoint: {fileID: 5431404032627540855}
+  enemyLayers:
+    serializedVersion: 2
+    m_Bits: 128
+  gameFeel: {fileID: 0}
+  parryWindow: 0.18
+  parryRecovery: 0.22
+  parryCooldown: 0.5
+  staggerRadius: 0.7
+  staggerDuration: 1.2
+  hitStopDuration: 0.14
+  shakeDuration: 0.22
+  shakeMagnitude: 0.3
 --- !u!1 &7508184891571263944
 GameObject:
   m_ObjectHideFlags: 0

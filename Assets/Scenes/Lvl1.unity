@@ -850,6 +850,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2370418495893030951, guid: a61a727c02c595847bb0781489a64915, type: 3}
+      propertyPath: gameFeel
+      value:
+      objectReference: {fileID: 519420033}
     - target: {fileID: 3652982717926528586, guid: a61a727c02c595847bb0781489a64915, type: 3}
       propertyPath: gameFeel
       value:
@@ -918,6 +922,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1322809557}
   - component: {fileID: 1322809556}
+  - component: {fileID: 1322809558}
   m_Layer: 0
   m_Name: back
   m_TagString: Untagged
@@ -1316,6 +1321,24 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 5011000000000000002, guid: 7c1f0b9a42e14c3ab0d6e5f81a2c4d73, type: 3}
   m_PrefabInstance: {fileID: 1720000003}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1322809558
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1322809555}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0ae6d1ad395f4192b17bb97e32d4f76e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::ParallaxLayer
+  cameraTransform: {fileID: 519420032}
+  parallaxFactor: 0.25
+  affectY: 0
+  infiniteScroll: 0
+  tileWidth: 0
+  spriteRenderer: {fileID: 1322809556}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

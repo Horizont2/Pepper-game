@@ -2,11 +2,13 @@ using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// What a hit looks and feels like on the receiving end: a short colour flash and a
-/// knockback impulse away from whoever landed it.
-/// While knockback is running the AI must not steer, so it exposes
-/// <see cref="IsKnockedBack"/> for ToasterAI to check - the same pattern the player
-/// uses for attacking and dashing.
+/// What a hit looks and feels like on the receiving end: a short colour flash, a knockback
+/// impulse away from whoever landed it, and the long open stagger a parry earns.
+///
+/// While either reaction is running the AI must not steer, so it exposes
+/// <see cref="IsReacting"/> for ToasterAI to check - the same pattern the player uses for
+/// attacking, dashing and parrying. Without it the AI overwrites the velocity on the next
+/// frame and the hit visually never happened.
 /// </summary>
 public class EnemyHitFeedback : MonoBehaviour
 {
@@ -25,12 +27,23 @@ public class EnemyHitFeedback : MonoBehaviour
     [SerializeField] private float knockbackLift = 2.5f;
     [SerializeField] private float knockbackDuration = 0.18f;
 
-    /// <summary>True while the knockback impulse is still playing out.</summary>
-    public bool IsKnockedBack { get; private set; }
+    [Header("Stagger (parry reward)")]
+    [Tooltip("Tint held for the whole stagger, so an open enemy is readable at a glance.")]
+    [SerializeField] private Color staggerColor = new Color(1f, 0.85f, 0.4f, 1f);
+
+    /// <summary>True while knockback or stagger is playing out. The AI stands down.</summary>
+    public bool IsReacting => isKnockedBack || isStaggered;
+
+    /// <summary>True only during a parry stagger - the window to punish.</summary>
+    public bool IsStaggered => isStaggered;
+
+    private bool isKnockedBack;
+    private bool isStaggered;
 
     private Color originalColor = Color.white;
     private Coroutine flashRoutine;
     private Coroutine knockbackRoutine;
+    private Coroutine staggerRoutine;
 
     private void Awake()
     {
@@ -48,9 +61,20 @@ public class EnemyHitFeedback : MonoBehaviour
         if (health != null) health.OnDamaged -= HandleDamaged;
     }
 
+    /// <summary>
+    /// Hold this enemy open and defenceless. Called by PepperParry on a successful parry.
+    /// </summary>
+    public void Stagger(float duration)
+    {
+        if (duration <= 0f) return;
+
+        if (staggerRoutine != null) StopCoroutine(staggerRoutine);
+        staggerRoutine = StartCoroutine(StaggerRoutine(duration));
+    }
+
     private void HandleDamaged(Vector2 sourcePosition)
     {
-        if (spriteRenderer != null)
+        if (spriteRenderer != null && !isStaggered)
         {
             if (flashRoutine != null) StopCoroutine(flashRoutine);
             flashRoutine = StartCoroutine(FlashRoutine());
@@ -67,16 +91,19 @@ public class EnemyHitFeedback : MonoBehaviour
     {
         spriteRenderer.color = flashColor;
 
-        // Unscaled, so the flash is still visible through the hit stop freeze
+        // Unscaled, so the flash is still visible through the hit stop freeze -
+        // which is exactly the frame the player is looking at
         yield return new WaitForSecondsRealtime(flashDuration);
 
-        spriteRenderer.color = originalColor;
+        // A stagger may have started during the flash; do not stomp its tint
+        if (!isStaggered) spriteRenderer.color = originalColor;
+
         flashRoutine = null;
     }
 
     private IEnumerator KnockbackRoutine(Vector2 sourcePosition)
     {
-        IsKnockedBack = true;
+        isKnockedBack = true;
 
         float direction = Mathf.Sign(transform.position.x - sourcePosition.x);
 
@@ -87,7 +114,25 @@ public class EnemyHitFeedback : MonoBehaviour
 
         yield return new WaitForSeconds(knockbackDuration);
 
-        IsKnockedBack = false;
+        isKnockedBack = false;
         knockbackRoutine = null;
+    }
+
+    private IEnumerator StaggerRoutine(float duration)
+    {
+        isStaggered = true;
+
+        if (spriteRenderer != null) spriteRenderer.color = staggerColor;
+
+        // Drop any momentum - a staggered enemy stands still and takes it
+        if (rb != null) rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+
+        yield return new WaitForSeconds(duration);
+
+        isStaggered = false;
+
+        if (spriteRenderer != null) spriteRenderer.color = originalColor;
+
+        staggerRoutine = null;
     }
 }

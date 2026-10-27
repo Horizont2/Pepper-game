@@ -15,6 +15,7 @@ public class PepperController : MonoBehaviour
     [SerializeField] private Rigidbody2D rb;
     [SerializeField] private Collider2D playerCollider;
     [SerializeField] private PepperCombat combat;
+    [SerializeField] private PepperParry parry;
 
     [Header("Movement Settings")]
     [SerializeField] private float moveSpeed = 10f;
@@ -83,15 +84,21 @@ public class PepperController : MonoBehaviour
         if (groundCheck == null) Debug.LogError($"[PepperController] groundCheck is not assigned on '{name}'.", this);
     }
 
+    /// <summary>Attacking or parrying both root the Pepper in place.</summary>
+    private bool IsActionLocked =>
+        (combat != null && combat.IsAttacking) || (parry != null && parry.IsBusy);
+
     private void Update()
     {
         if (IsDashing) return;
 
-        // The Pepper is rooted while attacking, so movement input is ignored
-        if (combat != null && combat.IsAttacking)
+        bool locked = IsActionLocked;
+
+        // The Pepper is rooted during a committed action, so movement input is ignored
+        if (locked)
         {
             horizontalInput = 0f;
-            jumpBufferCounter = 0f; // and a jump press must not queue up during the swing
+            jumpBufferCounter = 0f; // and a jump press must not queue up during it
         }
         else
         {
@@ -101,11 +108,8 @@ public class PepperController : MonoBehaviour
         UpdateTimers();
         CheckEnvironment();
 
-        // No jumping out of an attack
-        if (combat == null || !combat.IsAttacking)
-        {
-            HandleJump();
-        }
+        // No jumping out of an attack or a parry
+        if (!locked) HandleJump();
 
         FlipController();
     }
@@ -114,8 +118,8 @@ public class PepperController : MonoBehaviour
     {
         if (IsDashing) return;
 
-        // Grounded attack kills horizontal speed entirely, which gives the swing weight
-        if (combat != null && combat.IsAttacking && IsGrounded)
+        // A grounded committed action kills horizontal speed entirely, which gives it weight
+        if (IsActionLocked && IsGrounded)
         {
             rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
         }

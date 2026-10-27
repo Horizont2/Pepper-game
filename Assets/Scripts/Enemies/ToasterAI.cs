@@ -14,7 +14,7 @@ public class ToasterAI : MonoBehaviour
     [SerializeField] private Rigidbody2D rb;
     [SerializeField] private HealthComponent health;
     [SerializeField] private Animator animator;
-    [Tooltip("Optional. While it reports a knockback, this AI stops steering so the hit reads.")]
+    [Tooltip("Optional. While it reports a reaction, this AI stops steering so the hit reads.")]
     [SerializeField] private EnemyHitFeedback hitFeedback;
     [Tooltip("The player in this scene. Assigned per instance, not on the prefab.")]
     [SerializeField] private Transform player;
@@ -86,8 +86,8 @@ public class ToasterAI : MonoBehaviour
 
     private void Update()
     {
-        // Let the knockback impulse play out before taking the wheel back
-        if (hitFeedback != null && hitFeedback.IsKnockedBack) return;
+        // Let a knockback or a parry stagger play out before taking the wheel back
+        if (hitFeedback != null && hitFeedback.IsReacting) return;
 
         if (player == null)
         {
