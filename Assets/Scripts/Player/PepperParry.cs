@@ -21,6 +21,8 @@ public class PepperParry : MonoBehaviour
     [SerializeField] private LayerMask enemyLayers;
     [Tooltip("Lives on the Main Camera, so this is assigned on the scene instance, not the prefab.")]
     [SerializeField] private GameFeelManager gameFeel;
+    [Tooltip("Optional burst on a successful parry. A child of the Pepper, so it needs no spawning.")]
+    [SerializeField] private ParticleSystem parryEffect;
 
     [Header("Timing")]
     [Tooltip("How long incoming hits are cancelled. The forgiveness of the move.")]
@@ -132,6 +134,12 @@ public class PepperParry : MonoBehaviour
 
         // A parry lands harder than a normal hit - that contrast is the whole point
         if (gameFeel != null) gameFeel.TriggerHitImpact(hitStopDuration, shakeDuration, shakeMagnitude);
+
+        if (parryEffect != null)
+        {
+            parryEffect.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            parryEffect.Play(true);
+        }
 
         StaggerEnemiesInRange();
         OnParrySuccess?.Invoke();
