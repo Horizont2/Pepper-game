@@ -2,13 +2,15 @@ using UnityEngine;
 
 /// <summary>
 /// Smooth follow camera with optional level bounds.
-/// Owns the camera position: effects such as screen shake must not write to the
-/// transform themselves (this script would overwrite them every frame). They push
-/// an additive offset through <see cref="SetShakeOffset"/> instead.
+/// Kept as a dependency-free fallback; the scene is driven by Cinemachine, which
+/// also handles room bounds through CinemachineConfiner2D. Screen shake is applied
+/// by <see cref="CameraShake"/> on top of whatever drives the camera, so this script
+/// does not need to know about it.
 /// </summary>
 public class CameraFollow : MonoBehaviour
 {
-    [Header("Target")]
+    [Header("References")]
+    [SerializeField] private Camera cam;
     [SerializeField] private Transform target;
 
     [Header("Follow Settings")]
@@ -20,30 +22,24 @@ public class CameraFollow : MonoBehaviour
     [SerializeField] private Collider2D boundsCollider;
 
     private Vector3 velocity = Vector3.zero;
-    private Camera cam;
     private Vector2 minBounds;
     private Vector2 maxBounds;
     private float camHalfHeight;
     private float camHalfWidth;
 
-    // The clean, un-shaken position. Shake is added on top of it at render time so
-    // that it never feeds back into the smoothing.
+    // The clean, un-shaken position. Smoothing runs on this rather than on the live
+    // transform, so an offset another script adds never feeds back into SmoothDamp.
     private Vector3 basePosition;
-    private Vector3 shakeOffset;
 
     private void Start()
     {
-        cam = GetComponent<Camera>();
         basePosition = transform.position;
         CalculateCameraBounds();
     }
 
-    /// <summary>Additive offset applied on top of the follow position, in world units.</summary>
-    public void SetShakeOffset(Vector3 offset) => shakeOffset = offset;
-
     private void CalculateCameraBounds()
     {
-        if (useBounds && boundsCollider != null)
+        if (useBounds && boundsCollider != null && cam != null)
         {
             minBounds = boundsCollider.bounds.min;
             maxBounds = boundsCollider.bounds.max;
@@ -79,9 +75,7 @@ public class CameraFollow : MonoBehaviour
             targetPosition = new Vector3(clampedX, clampedY, targetPosition.z);
         }
 
-        // Smooth on the clean position, then add shake - otherwise the shake would
-        // pollute SmoothDamp's velocity and drag the camera around.
         basePosition = Vector3.SmoothDamp(basePosition, targetPosition, ref velocity, smoothTime);
-        transform.position = basePosition + shakeOffset;
+        transform.position = basePosition;
     }
 }

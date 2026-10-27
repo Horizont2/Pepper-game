@@ -6,11 +6,18 @@ using UnityEngine;
 /// overwrite each other and animations either flicker or never show at all.
 /// This class reads state from PepperController / PepperCombat / HealthComponent
 /// and decides what to play, by priority.
+/// All component references are assigned in the Inspector, never looked up at runtime.
 /// </summary>
 [RequireComponent(typeof(Animator))]
-[RequireComponent(typeof(Rigidbody2D))]
 public class PepperAnimator : MonoBehaviour
 {
+    [Header("References")]
+    [SerializeField] private Animator animator;
+    [SerializeField] private Rigidbody2D rb;
+    [SerializeField] private PepperController controller;
+    [SerializeField] private PepperCombat combat;
+    [SerializeField] private HealthComponent health;
+
     [Header("Animation State Names")]
     [Tooltip("Must match the state names in the Animator Controller exactly. Case sensitive!")]
     [SerializeField] private string idleAnimName = "Idle";
@@ -28,12 +35,6 @@ public class PepperAnimator : MonoBehaviour
     [Tooltip("How long the hurt animation holds before movement states take over again.")]
     [SerializeField] private float hurtLockDuration = 0.25f;
 
-    private Animator animator;
-    private Rigidbody2D rb;
-    private PepperController controller;
-    private PepperCombat combat;
-    private HealthComponent health;
-
     private int idleHash, runHash, jumpHash, fallHash, attackHash, dashHash, hurtHash, deathHash;
 
     private int currentState;
@@ -48,11 +49,8 @@ public class PepperAnimator : MonoBehaviour
 
     private void Awake()
     {
-        animator = GetComponent<Animator>();
-        rb = GetComponent<Rigidbody2D>();
-        controller = GetComponent<PepperController>();
-        combat = GetComponent<PepperCombat>();
-        health = GetComponent<HealthComponent>();
+        if (animator == null) Debug.LogError($"[PepperAnimator] Animator is not assigned on '{name}'.", this);
+        if (rb == null) Debug.LogError($"[PepperAnimator] Rigidbody2D is not assigned on '{name}'.", this);
 
         // Validation: animator.Play() on a state that does not exist fails silently.
         // One loud warning at startup beats guessing later why an animation "disappeared".
@@ -68,7 +66,7 @@ public class PepperAnimator : MonoBehaviour
 
     private int ResolveState(string stateName)
     {
-        if (string.IsNullOrEmpty(stateName)) return 0;
+        if (string.IsNullOrEmpty(stateName) || animator == null) return 0;
 
         int hash = Animator.StringToHash(stateName);
 

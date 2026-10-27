@@ -5,9 +5,17 @@ using UnityEngine;
 /// Pepper melee attack. Owns the attack state; PepperController reads it to lock
 /// movement and PepperAnimator reads it to play the swing.
 /// Does NOT drive animations directly - PepperAnimator owns those.
+/// All references are assigned in the Inspector, never looked up at runtime.
 /// </summary>
 public class PepperCombat : MonoBehaviour
 {
+    [Header("References")]
+    [Tooltip("Empty transform marking where the attack hitbox is centred.")]
+    [SerializeField] private Transform attackPoint;
+    [SerializeField] private LayerMask enemyLayers;
+    [Tooltip("Lives on the Main Camera, so this is assigned on the scene instance, not the prefab.")]
+    [SerializeField] private GameFeelManager gameFeel;
+
     [Header("Combat Settings")]
     [SerializeField] private int attackDamage = 25;
     [SerializeField] private float attackRate = 2f;
@@ -22,14 +30,19 @@ public class PepperCombat : MonoBehaviour
     [SerializeField] private float shakeDuration = 0.1f;
     [SerializeField] private float shakeMagnitude = 0.15f;
 
-    [Header("References")]
-    [SerializeField] private Transform attackPoint;
-    [SerializeField] private LayerMask enemyLayers;
-
     /// <summary>True for the whole swing. Read by PepperController and PepperAnimator.</summary>
     public bool IsAttacking { get; private set; }
 
     private float nextAttackTime;
+
+    private void Awake()
+    {
+        if (attackPoint == null)
+            Debug.LogError($"[PepperCombat] attackPoint is not assigned on '{name}'; attacks cannot hit anything.", this);
+
+        if (gameFeel == null)
+            Debug.LogWarning($"[PepperCombat] gameFeel is not assigned on '{name}'; hits will land without hit stop or shake.", this);
+    }
 
     private void Update()
     {
@@ -55,9 +68,9 @@ public class PepperCombat : MonoBehaviour
         bool hitSuccessful = ApplyDamageInRange();
 
         // 4. Impact feedback (hit stop + camera shake)
-        if (hitSuccessful && GameFeelManager.Instance != null)
+        if (hitSuccessful && gameFeel != null)
         {
-            GameFeelManager.Instance.TriggerHitImpact(hitStopDuration, shakeDuration, shakeMagnitude);
+            gameFeel.TriggerHitImpact(hitStopDuration, shakeDuration, shakeMagnitude);
         }
 
         // 5. Play out the rest of the swing
@@ -71,11 +84,7 @@ public class PepperCombat : MonoBehaviour
 
     private bool ApplyDamageInRange()
     {
-        if (attackPoint == null)
-        {
-            Debug.LogWarning($"[PepperCombat] No attackPoint assigned on '{name}'; the attack cannot hit anything.", this);
-            return false;
-        }
+        if (attackPoint == null) return false;
 
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayers);
         bool hitSuccessful = false;

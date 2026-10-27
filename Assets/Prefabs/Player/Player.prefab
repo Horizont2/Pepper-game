@@ -211,7 +211,7 @@ Rigidbody2D:
   m_Interpolate: 1
   m_SleepingMode: 1
   m_CollisionDetection: 1
-  m_Constraints: 0
+  m_Constraints: 4
 --- !u!114 &2370418495893030950
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -224,6 +224,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 571b2aa1933dfb24db2c14aef330ae33, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PepperController
+  rb: {fileID: 6704684622186390054}
+  playerCollider: {fileID: 4415461030121459628}
+  combat: {fileID: 3652982717926528586}
   moveSpeed: 10
   acceleration: 13
   deceleration: 16
@@ -242,6 +245,9 @@ MonoBehaviour:
   dashDuration: 0.15
   dashCooldown: 1
   dashTrail: {fileID: 6163053312243942349}
+  dashIgnoreLayers:
+    serializedVersion: 2
+    m_Bits: 128
 --- !u!114 &3652982717926528586
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -263,6 +269,7 @@ MonoBehaviour:
   shakeDuration: 0.1
   shakeMagnitude: 0.15
   attackPoint: {fileID: 5431404032627540855}
+  gameFeel: {fileID: 0}
   enemyLayers:
     serializedVersion: 2
     m_Bits: 128
@@ -329,6 +336,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5ba1f04585cb20949b688563a872d12e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PepperAnimator
+  animator: {fileID: 734407029016407236}
+  rb: {fileID: 6704684622186390054}
+  controller: {fileID: 2370418495893030950}
+  combat: {fileID: 3652982717926528586}
+  health: {fileID: 4546900063531101816}
   idleAnimName: Idle
   runAnimName: Run
   jumpAnimName: jump
@@ -489,5 +501,5 @@ TrailRenderer:
     generateLightingData: 0
   m_MinVertexDistance: 0.1
   m_Autodestruct: 0
-  m_Emitting: 1
+  m_Emitting: 0
   m_ApplyActiveColorSpace: 1

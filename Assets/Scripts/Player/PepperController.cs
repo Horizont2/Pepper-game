@@ -5,11 +5,17 @@ using UnityEngine;
 /// Pepper movement: acceleration/deceleration, jump with the usual game-feel helpers
 /// (coyote time, jump buffering, variable jump height) and a dash.
 /// Does NOT drive animations - PepperAnimator owns those.
+/// All component references are assigned in the Inspector, never looked up at runtime.
 /// </summary>
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(Collider2D))]
 public class PepperController : MonoBehaviour
 {
+    [Header("References")]
+    [SerializeField] private Rigidbody2D rb;
+    [SerializeField] private Collider2D playerCollider;
+    [SerializeField] private PepperCombat combat;
+
     [Header("Movement Settings")]
     [SerializeField] private float moveSpeed = 10f;
     [SerializeField] private float acceleration = 13f;
@@ -38,10 +44,8 @@ public class PepperController : MonoBehaviour
     [SerializeField] private float dashDuration = 0.15f;
     [SerializeField] private float dashCooldown = 1f;
     [SerializeField] private TrailRenderer dashTrail;
-
-    private Rigidbody2D rb;
-    private Collider2D playerCollider;
-    private PepperCombat combat; // used to know whether an attack is in progress
+    [Tooltip("Layers the Pepper passes through while dashing - the dash i-frames.")]
+    [SerializeField] private LayerMask dashIgnoreLayers;
 
     private float horizontalInput;
     private float coyoteTimeCounter;
@@ -50,7 +54,7 @@ public class PepperController : MonoBehaviour
     private bool isFacingRight = true;
 
     private bool canDash = true;
-    private int enemyLayerIndex;
+    private LayerMask excludeLayersBeforeDash;
 
     // Read by PepperAnimator and other systems
     public bool IsDashing { get; private set; }
@@ -59,14 +63,9 @@ public class PepperController : MonoBehaviour
 
     private void Awake()
     {
-        rb = GetComponent<Rigidbody2D>();
-        playerCollider = GetComponent<Collider2D>();
-        combat = GetComponent<PepperCombat>();
-
-        rb.freezeRotation = true;
-        enemyLayerIndex = LayerMask.NameToLayer("Enemy");
-
-        if (dashTrail != null) dashTrail.emitting = false;
+        if (rb == null) Debug.LogError($"[PepperController] Rigidbody2D is not assigned on '{name}'.", this);
+        if (playerCollider == null) Debug.LogError($"[PepperController] Collider2D is not assigned on '{name}'.", this);
+        if (groundCheck == null) Debug.LogError($"[PepperController] groundCheck is not assigned on '{name}'.", this);
     }
 
     private void Update()
@@ -222,20 +221,15 @@ public class PepperController : MonoBehaviour
 
         if (dashTrail != null) dashTrail.emitting = true;
 
-        // Pass through enemies for the duration of the dash (i-frames)
-        if (playerCollider != null && enemyLayerIndex > -1)
-        {
-            playerCollider.excludeLayers |= (1 << enemyLayerIndex);
-        }
+        // Pass through the configured layers for the duration of the dash (i-frames)
+        excludeLayersBeforeDash = playerCollider.excludeLayers;
+        playerCollider.excludeLayers = excludeLayersBeforeDash.value | dashIgnoreLayers.value;
 
         yield return new WaitForSeconds(dashDuration);
 
         if (dashTrail != null) dashTrail.emitting = false;
 
-        if (playerCollider != null && enemyLayerIndex > -1)
-        {
-            playerCollider.excludeLayers &= ~(1 << enemyLayerIndex);
-        }
+        playerCollider.excludeLayers = excludeLayersBeforeDash;
 
         rb.gravityScale = originalGravity;
         rb.linearVelocity = new Vector2(rb.linearVelocity.x * 0.5f, rb.linearVelocity.y);
