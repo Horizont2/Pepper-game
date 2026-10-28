@@ -459,3 +459,15 @@ in the Inspector:
   Top*.
 
 Nothing else about the interface lives in code.
+
+### The greybox HUD that is in the scene now
+
+`Lvl1` has a `HUD` canvas holding a plain health bar and one dash slot, built from Unity's
+default UI sprite with flat colours. It exists so the fight can be balanced at all — without
+a bar on screen there is no way to tell whether a hit landed — and it is **not a design**.
+Nothing in it should inform the Figma work.
+
+When the real sprites arrive, the swap is: drop them onto the existing `Image` components,
+or delete the whole `HUD` object and rebuild it from the artwork. The two scripts above are
+the only things that have to be re-pointed. There is no `EventSystem` in the scene yet; add
+one when the first interactive element appears, or buttons will not respond.
