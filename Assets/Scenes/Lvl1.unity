@@ -263,6 +263,7 @@ GameObject:
   - component: {fileID: 519420034}
   - component: {fileID: 519420035}
   - component: {fileID: 519420036}
+  - component: {fileID: 519420037}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -451,6 +452,25 @@ MonoBehaviour:
   offset: {x: 0, y: 1, z: -10}
   useBounds: 1
   boundsCollider: {fileID: 704778787}
+--- !u!114 &519420037
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 519420028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f8476ea3b54e4a7e8f2fe83e8fe437c9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraLook
+  composer: {fileID: 409772379}
+  controller: {fileID: 1960000012}
+  lookDistance: 1.1
+  holdBeforeLook: 0.35
+  lookSpeed: 2.5
+  requireGrounded: 1
+  requireStandingStill: 1
 --- !u!114 &519420036
 MonoBehaviour:
   m_ObjectHideFlags: 0

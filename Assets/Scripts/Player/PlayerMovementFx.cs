@@ -13,6 +13,7 @@ public class PlayerMovementFx : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private PepperController controller;
+    [SerializeField] private Rigidbody2D rb;
     [Tooltip("Optional. Lets a hard landing nudge the camera as well as raise dust.")]
     [SerializeField] private GameFeelManager gameFeel;
 
@@ -23,6 +24,16 @@ public class PlayerMovementFx : MonoBehaviour
     [Tooltip("Puff behind the dash. Mirrored to trail the direction travelled.")]
     [SerializeField] private SpriteSheetEffect dashEffect;
     [SerializeField] private SpriteSheetEffect wallJumpEffect;
+    [Tooltip("Looping puff while sliding down a wall - it is the only thing selling the friction.")]
+    [SerializeField] private SpriteSheetEffect wallSlideEffect;
+    [Tooltip("Periodic puff while running. Gives the ground something to say back.")]
+    [SerializeField] private SpriteSheetEffect runEffect;
+
+    [Header("Running")]
+    [Tooltip("Seconds between running puffs. Too short and it is a smoke trail.")]
+    [SerializeField] private float runDustInterval = 0.26f;
+    [Tooltip("Below this speed, walking leaves no dust.")]
+    [SerializeField] private float runDustMinSpeed = 1.8f;
 
     [Header("Landing")]
     [Tooltip("Below this impact speed a landing raises no dust at all.")]
@@ -54,6 +65,59 @@ public class PlayerMovementFx : MonoBehaviour
         controller.OnLanded -= HandleLanded;
         controller.OnDashed -= PlayDash;
         controller.OnWallJumped -= PlayWallJump;
+    }
+
+    private float runDustTimer;
+    private bool wallSlideShowing;
+
+    private void Update()
+    {
+        if (controller == null) return;
+
+        UpdateWallSlide();
+        UpdateRunDust();
+    }
+
+    private void UpdateWallSlide()
+    {
+        if (wallSlideEffect == null) return;
+
+        bool sliding = controller.IsWallSliding;
+        if (sliding == wallSlideShowing) return;
+
+        wallSlideShowing = sliding;
+
+        if (sliding)
+        {
+            wallSlideEffect.gameObject.SetActive(true);
+            wallSlideEffect.Play();
+        }
+        else
+        {
+            wallSlideEffect.Stop();
+            wallSlideEffect.gameObject.SetActive(false);
+        }
+    }
+
+    private void UpdateRunDust()
+    {
+        if (runEffect == null || rb == null) return;
+
+        // Only on the ground, only above a walk, and not while a committed action has
+        // frozen the Pepper in place
+        bool running = controller.IsGrounded && Mathf.Abs(rb.linearVelocity.x) >= runDustMinSpeed;
+
+        if (!running)
+        {
+            runDustTimer = 0f;
+            return;
+        }
+
+        runDustTimer -= Time.deltaTime;
+        if (runDustTimer > 0f) return;
+
+        runDustTimer = runDustInterval;
+        Fire(runEffect);
     }
 
     private void HandleLanded(float fallSpeed)
