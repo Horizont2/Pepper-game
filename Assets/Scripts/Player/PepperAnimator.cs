@@ -105,6 +105,17 @@ public class PepperAnimator : MonoBehaviour
 
     private void HandleDied() => isDead = true;
 
+    /// <summary>
+    /// Clears the death state so movement animations take over again. Death is the one
+    /// state with no timer - it holds until something says the character is back.
+    /// </summary>
+    public void ResetDeath()
+    {
+        isDead = false;
+        hurtLockUntil = 0f;
+        currentState = 0;   // force the next resolved state to actually play
+    }
+
     private void Update()
     {
         bool isAttacking = combat != null && combat.IsAttacking;

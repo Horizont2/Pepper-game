@@ -152,7 +152,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineConfiner2D
   BoundingShape2D: {fileID: 704778787}
   Damping: 0.5
-  SlowingDistance: 5
+  SlowingDistance: 0.8
   OversizeWindow:
     Enabled: 0
     MaxWindowSize: 0
@@ -176,19 +176,19 @@ MonoBehaviour:
     ScreenPosition: {x: 0, y: 0}
     DeadZone:
       Enabled: 1
-      Size: {x: 0.1, y: 0.1}
+      Size: {x: 0.2, y: 0.5}
     HardLimits:
       Enabled: 0
       Size: {x: 0.8, y: 0.8}
       Offset: {x: 0, y: 0}
   CenterOnActivate: 1
   TargetOffset: {x: 0, y: 0, z: 0}
-  Damping: {x: 0.15, y: 0.3, z: 0}
+  Damping: {x: 0.35, y: 0.7, z: 0}
   Lookahead:
     Enabled: 1
-    Time: 0.15
-    Smoothing: 0
-    IgnoreY: 0
+    Time: 0.25
+    Smoothing: 5
+    IgnoreY: 1
 --- !u!114 &409772380
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -788,26 +788,6 @@ PrefabInstance:
       propertyPath: m_WasSpriteAssigned
       value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 2370418495893030950, guid: a61a727c02c595847bb0781489a64915, type: 3}
-      propertyPath: dashForce
-      value: 6
-      objectReference: {fileID: 0}
-    - target: {fileID: 2370418495893030950, guid: a61a727c02c595847bb0781489a64915, type: 3}
-      propertyPath: jumpForce
-      value: 8
-      objectReference: {fileID: 0}
-    - target: {fileID: 2370418495893030950, guid: a61a727c02c595847bb0781489a64915, type: 3}
-      propertyPath: moveSpeed
-      value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 2370418495893030950, guid: a61a727c02c595847bb0781489a64915, type: 3}
-      propertyPath: dashCooldown
-      value: 1.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 2370418495893030950, guid: a61a727c02c595847bb0781489a64915, type: 3}
-      propertyPath: jumpCooldown
-      value: 0.5
-      objectReference: {fileID: 0}
     - target: {fileID: 3092881144596631807, guid: a61a727c02c595847bb0781489a64915, type: 3}
       propertyPath: m_LocalPosition.x
       value: -2.67
@@ -848,6 +828,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2370418495893030952, guid: a61a727c02c595847bb0781489a64915, type: 3}
+      propertyPath: gameFeel
+      value:
+      objectReference: {fileID: 519420033}
+    - target: {fileID: 2370418495893030953, guid: a61a727c02c595847bb0781489a64915, type: 3}
+      propertyPath: respawnPoint
+      value:
+      objectReference: {fileID: 1950000002}
     - target: {fileID: 2370418495893030951, guid: a61a727c02c595847bb0781489a64915, type: 3}
       propertyPath: gameFeel
       value:
@@ -3312,6 +3300,37 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!1 &1950000001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1950000002}
+  m_Layer: 0
+  m_Name: PlayerSpawn
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1950000002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1950000001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -2.67, y: -0.78, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -3325,3 +3344,4 @@ SceneRoots:
   - {fileID: 1322809557}
   - {fileID: 1710000010}
   - {fileID: 1900000002}
+  - {fileID: 1950000002}

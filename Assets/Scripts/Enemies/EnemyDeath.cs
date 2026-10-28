@@ -16,7 +16,7 @@ public class EnemyDeath : MonoBehaviour
     [SerializeField] private HealthComponent health;
     [Tooltip("Switched off on death so the corpse stops chasing.")]
     [SerializeField] private ToasterAI ai;
-    [SerializeField] private EnemyHitFeedback hitFeedback;
+    [SerializeField] private HitFeedback hitFeedback;
     [SerializeField] private Collider2D bodyCollider;
     [SerializeField] private Rigidbody2D rb;
     [SerializeField] private SpriteRenderer spriteRenderer;

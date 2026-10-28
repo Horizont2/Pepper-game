@@ -81,6 +81,8 @@ GameObject:
   - component: {fileID: 4546900063531101816}
   - component: {fileID: 6155688484261038520}
   - component: {fileID: 2370418495893030951}
+  - component: {fileID: 2370418495893030952}
+  - component: {fileID: 2370418495893030953}
   m_Layer: 8
   m_Name: Player
   m_TagString: Untagged
@@ -232,13 +234,15 @@ MonoBehaviour:
   combat: {fileID: 3652982717926528586}
   parry: {fileID: 2370418495893030951}
   health: {fileID: 4546900063531101816}
-  moveSpeed: 3.5
+  hitFeedback: {fileID: 2370418495893030952}
+  moveSpeed: 3
   acceleration: 13
   deceleration: 16
   frictionAmount: 0.2
-  jumpForce: 8.8
+  jumpForce: 8
   fallMultiplier: 2.5
   lowJumpMultiplier: 2
+  jumpCooldown: 0.5
   coyoteTime: 0.15
   jumpBufferTime: 0.1
   groundCheck: {fileID: 4294846154624479348}
@@ -246,9 +250,9 @@ MonoBehaviour:
   groundLayer:
     serializedVersion: 2
     m_Bits: 64
-  dashForce: 10.0
+  dashForce: 6
   dashDuration: 0.15
-  dashCooldown: 1
+  dashCooldown: 1.5
   dashTrail: {fileID: 6163053312243942349}
   dashIgnoreLayers:
     serializedVersion: 2
@@ -387,6 +391,52 @@ MonoBehaviour:
   hitStopDuration: 0.14
   shakeDuration: 0.22
   shakeMagnitude: 0.3
+--- !u!114 &2370418495893030952
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4795655891724114621}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 505226676ce244569dd83dbbb0e5562a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HitFeedback
+  health: {fileID: 4546900063531101816}
+  spriteRenderer: {fileID: 1102457643944670748}
+  rb: {fileID: 6704684622186390054}
+  gameFeel: {fileID: 0}
+  hitStopDuration: 0.04
+  shakeDuration: 0.18
+  shakeMagnitude: 0.22
+  flashColor: {r: 1, g: 1, b: 1, a: 1}
+  flashDuration: 0.1
+  knockbackForce: 2.5
+  knockbackLift: 2
+  knockbackDuration: 0.15
+  staggerColor: {r: 1, g: 0.85, b: 0.4, a: 1}
+--- !u!114 &2370418495893030953
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4795655891724114621}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f547fb186b24b188dca57d6a979b6b0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerDeath
+  health: {fileID: 4546900063531101816}
+  rb: {fileID: 6704684622186390054}
+  controller: {fileID: 2370418495893030950}
+  combat: {fileID: 3652982717926528586}
+  parry: {fileID: 2370418495893030951}
+  animatorDriver: {fileID: 6155688484261038520}
+  respawnPoint: {fileID: 0}
+  deathHold: 1.2
+  fallKillY: -5
 --- !u!1 &7508184891571263944
 GameObject:
   m_ObjectHideFlags: 0

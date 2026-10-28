@@ -4,18 +4,27 @@ using UnityEngine;
 /// <summary>
 /// What a hit looks and feels like on the receiving end: a short colour flash, a knockback
 /// impulse away from whoever landed it, and the long open stagger a parry earns.
+/// Lives on the player as well as on enemies - taking a hit has to read on both sides, and
+/// with no HUD yet this flash is the only sign the player gets that something landed.
 ///
 /// While either reaction is running the AI must not steer, so it exposes
 /// <see cref="IsReacting"/> for ToasterAI to check - the same pattern the player uses for
 /// attacking, dashing and parrying. Without it the AI overwrites the velocity on the next
 /// frame and the hit visually never happened.
 /// </summary>
-public class EnemyHitFeedback : MonoBehaviour
+public class HitFeedback : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private HealthComponent health;
     [SerializeField] private SpriteRenderer spriteRenderer;
     [SerializeField] private Rigidbody2D rb;
+    [Tooltip("Optional. Set on the player so taking a hit shakes the camera, not just the sprite.")]
+    [SerializeField] private GameFeelManager gameFeel;
+
+    [Header("Camera (only when gameFeel is set)")]
+    [SerializeField] private float hitStopDuration = 0.04f;
+    [SerializeField] private float shakeDuration = 0.18f;
+    [SerializeField] private float shakeMagnitude = 0.22f;
 
     [Header("Flash")]
     [SerializeField] private Color flashColor = Color.white;
@@ -47,7 +56,7 @@ public class EnemyHitFeedback : MonoBehaviour
 
     private void Awake()
     {
-        if (health == null) Debug.LogError($"[EnemyHitFeedback] health is not assigned on '{name}'.", this);
+        if (health == null) Debug.LogError($"[HitFeedback] health is not assigned on '{name}'.", this);
         if (spriteRenderer != null) originalColor = spriteRenderer.color;
     }
 
@@ -74,6 +83,9 @@ public class EnemyHitFeedback : MonoBehaviour
 
     private void HandleDamaged(Vector2 sourcePosition)
     {
+        // Taking a hit should be as loud as landing one
+        if (gameFeel != null) gameFeel.TriggerHitImpact(hitStopDuration, shakeDuration, shakeMagnitude);
+
         if (spriteRenderer != null && !isStaggered)
         {
             if (flashRoutine != null) StopCoroutine(flashRoutine);

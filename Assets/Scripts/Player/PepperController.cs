@@ -18,6 +18,8 @@ public class PepperController : MonoBehaviour
     [SerializeField] private PepperParry parry;
     [Tooltip("Needed for the dash to actually grant invulnerability, not just pass through bodies.")]
     [SerializeField] private HealthComponent health;
+    [Tooltip("Optional. While it reports a reaction, movement input is ignored so a hit reads.")]
+    [SerializeField] private HitFeedback hitFeedback;
 
     [Header("Movement Settings")]
     [SerializeField] private float moveSpeed = 10f;
@@ -61,6 +63,12 @@ public class PepperController : MonoBehaviour
     private float dashReadyTime;
     private LayerMask excludeLayersBeforeDash;
 
+    // Captured once so a dash interrupted by death can be undone exactly. The dash zeroes
+    // gravity and widens the collider's exclusions; dying mid-dash without restoring them
+    // leaves the Pepper floating and phasing through enemies for the rest of the session.
+    private float defaultGravityScale;
+    private LayerMask defaultExcludeLayers;
+
     // Read by PepperAnimator and other systems
     public bool IsDashing { get; private set; }
     public bool IsGrounded { get; private set; }
@@ -85,6 +93,29 @@ public class PepperController : MonoBehaviour
         if (rb == null) Debug.LogError($"[PepperController] Rigidbody2D is not assigned on '{name}'.", this);
         if (playerCollider == null) Debug.LogError($"[PepperController] Collider2D is not assigned on '{name}'.", this);
         if (groundCheck == null) Debug.LogError($"[PepperController] groundCheck is not assigned on '{name}'.", this);
+
+        if (rb != null) defaultGravityScale = rb.gravityScale;
+        if (playerCollider != null) defaultExcludeLayers = playerCollider.excludeLayers;
+    }
+
+    /// <summary>
+    /// Drop everything in progress and return to a clean standing state. Called on death so
+    /// a half-finished dash cannot resume, or leave its gravity and collider changes behind.
+    /// </summary>
+    public void CancelActions()
+    {
+        StopAllCoroutines();
+
+        IsDashing = false;
+        canDash = true;
+        jumpBufferCounter = 0f;
+        coyoteTimeCounter = 0f;
+        jumpCooldownTimer = 0f;
+        horizontalInput = 0f;
+
+        if (rb != null) rb.gravityScale = defaultGravityScale;
+        if (playerCollider != null) playerCollider.excludeLayers = defaultExcludeLayers;
+        if (dashTrail != null) dashTrail.emitting = false;
     }
 
     private void OnEnable()
@@ -140,6 +171,14 @@ public class PepperController : MonoBehaviour
     private void FixedUpdate()
     {
         if (IsDashing) return;
+
+        // Let a knockback carry. Driving movement through it would cancel the impulse on
+        // the next physics step and taking a hit would not read at all.
+        if (hitFeedback != null && hitFeedback.IsReacting)
+        {
+            ApplyBetterGravity();
+            return;
+        }
 
         // A grounded committed action kills horizontal speed entirely, which gives it weight
         if (IsActionLocked && IsGrounded)

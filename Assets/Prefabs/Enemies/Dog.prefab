@@ -210,7 +210,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 505226676ce244569dd83dbbb0e5562a, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnemyHitFeedback
+  m_EditorClassIdentifier: Assembly-CSharp::HitFeedback
   health: {fileID: 5011000000000000107}
   spriteRenderer: {fileID: 5011000000000000103}
   rb: {fileID: 5011000000000000105}
@@ -260,16 +260,20 @@ MonoBehaviour:
   hitFeedback: {fileID: 5011000000000000109}
   player: {fileID: 0}
   patrolPoints: []
+  spriteFacesRight: 0
   patrolSpeed: 0.9
   chaseSpeed: 2.2
   patrolPointReachedDistance: 0.12
   detectionRange: 3.0
-  attackRange: 0.314
+  stopDistance: 0.415
+  attackRange: 0.715
   playerLayer:
     serializedVersion: 2
     m_Bits: 256
   attackDamage: 12
   attackCooldown: 1.5
+  attackWindup: 0.35
+  attackRecovery: 0.25
   attackAnimName: 
 --- !u!1 &5011000000000000111
 GameObject:

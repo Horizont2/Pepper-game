@@ -66,6 +66,14 @@ public class PepperCombat : MonoBehaviour
         }
     }
 
+    /// <summary>Abandon a swing in progress. Called on death so IsAttacking cannot stay stuck on.</summary>
+    public void CancelAttack()
+    {
+        StopAllCoroutines();
+        IsAttacking = false;
+        nextAttackTime = 0f;
+    }
+
     private IEnumerator AttackRoutine()
     {
         // 1. Open the attack (this locks movement via PepperController)

@@ -108,6 +108,16 @@ public class PepperParry : MonoBehaviour
         }
     }
 
+    /// <summary>Abandon a parry in progress. Called on death so the window cannot stay open.</summary>
+    public void CancelParry()
+    {
+        StopAllCoroutines();
+        IsWindowOpen = false;
+        IsBusy = false;
+        canParry = true;
+        readyTime = 0f;
+    }
+
     private IEnumerator ParryRoutine()
     {
         canParry = false;
@@ -166,7 +176,7 @@ public class PepperParry : MonoBehaviour
 
         foreach (Collider2D enemy in caught)
         {
-            EnemyHitFeedback feedback = enemy.GetComponent<EnemyHitFeedback>();
+            HitFeedback feedback = enemy.GetComponent<HitFeedback>();
             if (feedback != null) feedback.Stagger(staggerDuration);
         }
     }

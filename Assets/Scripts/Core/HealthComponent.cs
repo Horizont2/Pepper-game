@@ -78,6 +78,32 @@ public class HealthComponent : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Kill outright, ignoring i-frames and any absorber. For things no defence applies
+    /// to - a pit, a scripted death. A parry cannot save you from falling.
+    /// </summary>
+    public void Kill()
+    {
+        if (!IsAlive) return;
+
+        currentHealth = 0;
+        lastDamageTime = Time.time;
+
+        OnDamaged?.Invoke(transform.position);
+        OnHealthChanged?.Invoke(currentHealth, maxHealth);
+
+        Die();
+    }
+
+    /// <summary>Back to full health, with the i-frame window cleared. Used on respawn.</summary>
+    public void Revive()
+    {
+        currentHealth = maxHealth;
+        lastDamageTime = float.NegativeInfinity;
+
+        OnHealthChanged?.Invoke(currentHealth, maxHealth);
+    }
+
     public void Heal(int healAmount)
     {
         if (!IsAlive) return;
