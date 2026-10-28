@@ -36,6 +36,11 @@ public class HitFeedback : MonoBehaviour
     [SerializeField] private float knockbackLift = 2.5f;
     [SerializeField] private float knockbackDuration = 0.18f;
 
+    [Header("Tell")]
+    [Tooltip("Held while this character is winding up, or the moment it spots the player. " +
+             "A swing with no visible tell can only be parried from memory.")]
+    [SerializeField] private Color tellColor = new Color(1f, 0.58f, 0.45f, 1f);
+
     [Header("Stagger (parry reward)")]
     [Tooltip("Tint held for the whole stagger, so an open enemy is readable at a glance.")]
     [SerializeField] private Color staggerColor = new Color(1f, 0.85f, 0.4f, 1f);
@@ -53,6 +58,7 @@ public class HitFeedback : MonoBehaviour
     private Coroutine flashRoutine;
     private Coroutine knockbackRoutine;
     private Coroutine staggerRoutine;
+    private Coroutine tellRoutine;
 
     private void Awake()
     {
@@ -79,6 +85,31 @@ public class HitFeedback : MonoBehaviour
 
         if (staggerRoutine != null) StopCoroutine(staggerRoutine);
         staggerRoutine = StartCoroutine(StaggerRoutine(duration));
+    }
+
+    /// <summary>
+    /// Hold the tell colour for a beat - a wind-up, or the moment the player is spotted.
+    /// It is the difference between an attack the player can read and one they memorise.
+    /// </summary>
+    public void ShowTell(float duration)
+    {
+        if (duration <= 0f || spriteRenderer == null) return;
+
+        if (tellRoutine != null) StopCoroutine(tellRoutine);
+        tellRoutine = StartCoroutine(TellRoutine(duration));
+    }
+
+    private IEnumerator TellRoutine(float duration)
+    {
+        Color before = spriteRenderer.color;
+        spriteRenderer.color = tellColor;
+
+        yield return new WaitForSeconds(duration);
+
+        // A hit or a stagger landing mid-tell owns the colour now - do not stomp it
+        if (!isStaggered && spriteRenderer.color == tellColor) spriteRenderer.color = before;
+
+        tellRoutine = null;
     }
 
     private void HandleDamaged(Vector2 sourcePosition)

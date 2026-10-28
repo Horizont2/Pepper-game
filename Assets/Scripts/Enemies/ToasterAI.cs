@@ -61,13 +61,22 @@ public class ToasterAI : MonoBehaviour
     [SerializeField] private float attackRecovery = 0.25f;
     [SerializeField] private string attackAnimName = "Attack";
 
+    [Header("Alert")]
+    [Tooltip("Beat of hesitation the first time the player is spotted. Switching straight from " +
+             "patrolling to charging gives the player nothing to read.")]
+    [SerializeField] private float alertDuration = 0.4f;
+
     [Header("Debug")]
     [Tooltip("Logs every decision this AI makes. Leave off except when something looks wrong.")]
     [SerializeField] private bool logDecisions;
 
+    /// <summary>Raised the moment this enemy notices the player. For audio and a future "!" mark.</summary>
+    public event System.Action OnAlerted;
+
     private int currentPatrolIndex;
     private float nextAttackTime;
     private bool isChasing;
+    private bool isAlerting;
     private bool isAttacking;
     private bool isFacingRight;
     private int attackAnimHash;
@@ -133,8 +142,9 @@ public class ToasterAI : MonoBehaviour
 
         Transform target = Target;
 
-        // Committed to a swing: hold still and keep facing the target
-        if (isAttacking)
+        // Committed to a swing, or taking the beat after spotting the player: hold
+        // still and keep facing the target
+        if (isAttacking || isAlerting)
         {
             rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
             if (target != null) FaceTowards(target.position.x);
@@ -152,6 +162,9 @@ public class ToasterAI : MonoBehaviour
 
         if (distanceToPlayer <= detectionRange)
         {
+            // Only on the transition, not every frame it stays in range
+            if (!isChasing) StartCoroutine(AlertRoutine());
+
             isChasing = true;
         }
         else if (distanceToPlayer > detectionRange * 1.3f) // buffer so it doesn't flicker on the boundary
@@ -269,6 +282,19 @@ public class ToasterAI : MonoBehaviour
         StartCoroutine(AttackRoutine());
     }
 
+    private IEnumerator AlertRoutine()
+    {
+        isAlerting = true;
+
+        Report("spotted the player");
+        if (hitFeedback != null) hitFeedback.ShowTell(alertDuration);
+        OnAlerted?.Invoke();
+
+        yield return new WaitForSeconds(alertDuration);
+
+        isAlerting = false;
+    }
+
     private IEnumerator AttackRoutine()
     {
         isAttacking = true;
@@ -277,6 +303,9 @@ public class ToasterAI : MonoBehaviour
         {
             animator.Play(attackAnimHash, 0, 0f);
         }
+
+        // Colour the wind-up so the swing can be read, and parried, on sight
+        if (hitFeedback != null) hitFeedback.ShowTell(attackWindup);
 
         // Wind up first. A hit landing on the frame the swing starts is unreadable, and
         // leaves the parry nothing to catch.

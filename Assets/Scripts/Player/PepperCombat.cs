@@ -20,6 +20,9 @@ public class PepperCombat : MonoBehaviour
     [Tooltip("Optional burst played where the swing connects. A child of attackPoint, so it " +
              "already sits in the right place and needs no spawning.")]
     [SerializeField] private ParticleSystem hitEffect;
+    [Tooltip("Arc drawn as the swing starts, whether or not it lands. Without it the attack " +
+             "is invisible until it hits something.")]
+    [SerializeField] private SpriteSheetEffect swingEffect;
 
     [Header("Combat Settings")]
     [SerializeField] private int attackDamage = 25;
@@ -101,6 +104,12 @@ public class PepperCombat : MonoBehaviour
         IsAttacking = true;
         lastSwingKilled = false;
         OnAttackStarted?.Invoke();
+
+        if (swingEffect != null)
+        {
+            swingEffect.gameObject.SetActive(true);
+            swingEffect.Play();
+        }
 
         // 2. Wind up, so the hit connects partway through the swing
         float windup = Mathf.Clamp(attackWindup, 0f, attackDuration);

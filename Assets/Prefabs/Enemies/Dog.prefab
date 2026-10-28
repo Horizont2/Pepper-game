@@ -219,6 +219,7 @@ MonoBehaviour:
   knockbackForce: 2
   knockbackLift: 1.2
   knockbackDuration: 0.18
+  tellColor: {r: 1, g: 0.58, b: 0.45, a: 1}
   staggerColor: {r: 1, g: 0.85, b: 0.4, a: 1}
 --- !u!114 &5011000000000000110
 MonoBehaviour:
@@ -282,6 +283,7 @@ MonoBehaviour:
   attackWindup: 0.35
   attackRecovery: 0.25
   attackAnimName: 
+  alertDuration: 0.4
 --- !u!1 &5011000000000000111
 GameObject:
   m_ObjectHideFlags: 0
