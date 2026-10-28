@@ -197,7 +197,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1c2b9550310aeed4a828f1ad3637e66b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HealthComponent
-  maxHealth: 50
+  maxHealth: 75
   invulnerabilityDuration: 0.25
 --- !u!114 &5011000000000000009
 MonoBehaviour:
@@ -214,11 +214,11 @@ MonoBehaviour:
   health: {fileID: 5011000000000000007}
   spriteRenderer: {fileID: 5011000000000000003}
   rb: {fileID: 5011000000000000005}
-  flashColor: {r: 1, g: 1, b: 1, a: 1}
-  flashDuration: 0.08
-  knockbackForce: 2
+  flashColor: {r: 1, g: 0.25, b: 0.25, a: 1}
+  flashDuration: 0.09
+  knockbackForce: 1.1
   knockbackLift: 1.2
-  knockbackDuration: 0.18
+  knockbackDuration: 0.13
   tellColor: {r: 1, g: 0.58, b: 0.45, a: 1}
   staggerColor: {r: 1, g: 0.85, b: 0.4, a: 1}
 --- !u!114 &5011000000000000010
@@ -275,15 +275,19 @@ MonoBehaviour:
   detectionRange: 2.5
   stopDistance: 0.43
   attackRange: 0.73
+  attackCommitFraction: 0.8
   playerLayer:
     serializedVersion: 2
     m_Bits: 256
   attackDamage: 15
-  attackCooldown: 1.5
+  attackCooldown: 1
   attackWindup: 0.35
   attackRecovery: 0.25
   attackAnimName: 
-  alertDuration: 0.4
+  coilSpeed: 0.8
+  lungeSpeed: 3.2
+  lungeTravel: 0.08
+  alertDuration: 0.25
 --- !u!1 &5011000000000000011
 GameObject:
   m_ObjectHideFlags: 0

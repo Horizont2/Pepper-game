@@ -391,7 +391,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HealthComponent
   maxHealth: 100
-  invulnerabilityDuration: 1
+  invulnerabilityDuration: 0.7
 --- !u!114 &6155688484261038520
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -472,8 +472,8 @@ MonoBehaviour:
   hitStopDuration: 0.04
   shakeDuration: 0.18
   shakeMagnitude: 0.22
-  flashColor: {r: 1, g: 1, b: 1, a: 1}
-  flashDuration: 0.1
+  flashColor: {r: 1, g: 0.33, b: 0.33, a: 1}
+  flashDuration: 0.12
   knockbackForce: 2.5
   knockbackLift: 2
   knockbackDuration: 0.15

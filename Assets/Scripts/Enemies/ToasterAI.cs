@@ -50,6 +50,10 @@ public class ToasterAI : MonoBehaviour
     [SerializeField] private float stopDistance = 0.5f;
     [Tooltip("Reach of the swing. A little more than stopDistance, or the hit never connects.")]
     [SerializeField] private float attackRange = 0.75f;
+    [Tooltip("Fraction of the reach at which it commits to a swing. Below 1, so a swing " +
+             "started at the very edge of reach is not a guaranteed whiff.")]
+    [Range(0.3f, 1f)]
+    [SerializeField] private float attackCommitFraction = 0.8f;
     [SerializeField] private LayerMask playerLayer;
 
     [Header("Combat Settings")]
@@ -60,6 +64,17 @@ public class ToasterAI : MonoBehaviour
     [Tooltip("How long it stays committed after the swing - the opening to punish.")]
     [SerializeField] private float attackRecovery = 0.25f;
     [SerializeField] private string attackAnimName = "Attack";
+
+    [Header("Attack Motion")]
+    [Tooltip("The placeholder enemies have no attack clip, so the body has to sell the swing: " +
+             "it gathers backwards on the wind-up and drives forward on the strike. Gather, " +
+             "pause, strike reads as an attack even with a walk cycle on screen.")]
+    [SerializeField] private float coilSpeed = 0.8f;
+    [Tooltip("Speed of the forward drive on the strike.")]
+    [SerializeField] private float lungeSpeed = 3.2f;
+    [Tooltip("How long the lunge travels before the hit is resolved. It closes the last few " +
+             "centimetres, so a swing committed at the edge of reach can still land.")]
+    [SerializeField] private float lungeTravel = 0.08f;
 
     [Header("Alert")]
     [Tooltip("Beat of hesitation the first time the player is spotted. Switching straight from " +
@@ -73,8 +88,15 @@ public class ToasterAI : MonoBehaviour
     /// <summary>Raised the moment this enemy notices the player. For audio and a future "!" mark.</summary>
     public event System.Action OnAlerted;
 
+    /// <summary>Raised as a swing starts winding up, before it can possibly connect.</summary>
+    public event System.Action OnAttackStarted;
+
+    /// <summary>Raised only when a swing actually reached the player.</summary>
+    public event System.Action OnAttackLanded;
+
     private int currentPatrolIndex;
     private float nextAttackTime;
+    private float shoveUntil;
     private bool isChasing;
     private bool isAlerting;
     private bool isAttacking;
@@ -146,7 +168,11 @@ public class ToasterAI : MonoBehaviour
         // still and keep facing the target
         if (isAttacking || isAlerting)
         {
-            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+            // A gather or a lunge owns the body for its beat. Zeroing the velocity every
+            // frame would cancel the shove before it was ever drawn.
+            if (Time.time >= shoveUntil)
+                rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+
             if (target != null) FaceTowards(target.position.x);
             return;
         }
@@ -184,17 +210,23 @@ public class ToasterAI : MonoBehaviour
         // stepped around it.
         FaceTowards(target.position.x);
 
+        // Hold position once it is close enough, but swing on reach rather than on arrival.
+        // These two used to be sequential - walk all the way in, and only then start a
+        // 0.35s wind-up - which added up to well over a second before the first swing
+        // could land. The player kills a weak enemy in half that, so in practice the
+        // attack never happened: the enemy died mid-approach every time.
         if (distanceToPlayer <= stopDistance)
         {
-            Report("in range, swinging");
+            Report("holding at range");
             rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
-            TryAttack();
         }
         else
         {
             Report("chasing");
             ChasePlayer();
         }
+
+        if (distanceToPlayer <= attackRange * attackCommitFraction) TryAttack();
     }
 
     /// <summary>Logs a state only when it changes, so the console is readable.</summary>
@@ -299,6 +331,11 @@ public class ToasterAI : MonoBehaviour
     {
         isAttacking = true;
 
+        Transform target = Target;
+        float toTarget = target != null
+            ? Mathf.Sign(target.position.x - transform.position.x)
+            : (isFacingRight ? 1f : -1f);
+
         if (animator != null && attackAnimHash != 0)
         {
             animator.Play(attackAnimHash, 0, 0f);
@@ -307,9 +344,25 @@ public class ToasterAI : MonoBehaviour
         // Colour the wind-up so the swing can be read, and parried, on sight
         if (hitFeedback != null) hitFeedback.ShowTell(attackWindup);
 
+        OnAttackStarted?.Invoke();
+
+        // Gather backwards for the first half of the wind-up, then stand still for the
+        // second. Only ever onto footing it already has - an enemy that lunges off its
+        // own ledge is worse than one that cannot attack.
+        if (coilSpeed > 0f && CanAdvance(-toTarget))
+            Shove(-toTarget * coilSpeed, attackWindup * 0.5f);
+
         // Wind up first. A hit landing on the frame the swing starts is unreadable, and
         // leaves the parry nothing to catch.
         if (attackWindup > 0f) yield return new WaitForSeconds(attackWindup);
+
+        // Drive into the strike. This is what makes a swing visible at all, the placeholder
+        // enemies having no attack clip, and it closes the last stretch of the reach.
+        if (lungeSpeed > 0f && CanAdvance(toTarget))
+        {
+            Shove(toTarget * lungeSpeed, lungeTravel);
+            if (lungeTravel > 0f) yield return new WaitForSeconds(lungeTravel);
+        }
 
         // Only connects if the player is still in reach when the swing lands
         Collider2D hit = Physics2D.OverlapCircle(transform.position, attackRange, playerLayer);
@@ -329,6 +382,7 @@ public class ToasterAI : MonoBehaviour
             else
             {
                 playerHealth.TakeDamage(attackDamage, transform.position);
+                OnAttackLanded?.Invoke();
                 if (logDecisions) Debug.Log($"[ToasterAI] {name}: dealt {attackDamage} to '{playerHealth.name}', now {playerHealth.CurrentHealth}/{playerHealth.MaxHealth}", this);
             }
         }
@@ -336,6 +390,18 @@ public class ToasterAI : MonoBehaviour
         if (attackRecovery > 0f) yield return new WaitForSeconds(attackRecovery);
 
         isAttacking = false;
+    }
+
+    /// <summary>
+    /// Drive the body sideways for a beat and keep <see cref="Update"/> from zeroing it on
+    /// the next frame. The gather and the lunge are the only animation the swing has.
+    /// </summary>
+    private void Shove(float speedX, float duration)
+    {
+        if (duration <= 0f) return;
+
+        rb.linearVelocity = new Vector2(speedX, rb.linearVelocity.y);
+        shoveUntil = Time.time + duration;
     }
 
     /// <summary>Turn to face a world X position, honouring which way the art is drawn.</summary>
@@ -373,6 +439,9 @@ public class ToasterAI : MonoBehaviour
         Gizmos.DrawWireSphere(transform.position, detectionRange);
         Gizmos.color = new Color(1f, 0.6f, 0f);
         Gizmos.DrawWireSphere(transform.position, attackRange);
+        // Where it actually commits, which is the one that decides whether it ever swings
+        Gizmos.color = new Color(1f, 0.35f, 0f);
+        Gizmos.DrawWireSphere(transform.position, attackRange * attackCommitFraction);
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, stopDistance);
 
