@@ -30,47 +30,49 @@ These systems emit in 3D, so particles move along Z and vanish or get clipped. I
 pick a 2D shape (Circle, or Box with Z scale 0), and clear any Z component in *Velocity
 over Lifetime*. Keeping the effect's local Z at 0 is not enough on its own.
 
-## Wiring
+## What is already wired
 
-Nothing is instantiated at runtime. Each effect is a child object sitting on the prefab,
-and the script calls `Play()` on it.
+All three effects are attached in the prefabs. Nothing is instantiated at runtime -
+each one is a child object, and the script either plays it or switches it on.
 
-| Effect | Parent it under | Assign to |
-|---|---|---|
-| Attack hit | `Player/AttackPoint` | `PepperCombat → hitEffect` |
-| Parry | `Player` (root) | `PepperParry → parryEffect` |
-| Enemy death | enemy prefab root | already wired as the `DeathFx` child |
+| Effect | Prefab used | Lives under | Driven by |
+|---|---|---|---|
+| Attack hit | `CFXR Hit A (Red)` | `Player/AttackPoint/HitFx` | `PepperCombat.hitEffect` |
+| Parry | `CFXR Impact Glowing HDR (Blue)` | `Player/ParryFx` | `PepperParry.parryEffect` |
+| Enemy death, sprite | SunnyLand burst frames | `<Enemy>/DeathFx` | `EnemyDeath.deathFx` |
+| Enemy death, particles | `CFXR2 Blood Shape Splash` | `<Enemy>/DeathParticles` | `EnemyDeath.deathParticles` |
 
-Steps for each: drag the pack prefab in as a child, uncheck **Play On Awake** (the script
-drives it), set the sorting order, then drag the child's `ParticleSystem` into the matching
-field on the script.
+Three settings had to be overridden on every nested instance, and they are the reason a
+copied-in Cartoon FX prefab does not just work:
 
-For enemy death, the generated prefabs already carry a `DeathFx` child built from the
-SunnyLand burst frames, shipped inactive and switched on by `EnemyDeath`. To use a particle
-effect instead, replace that child's contents and leave **Play On Awake** *on* — it is
-activated rather than played, so it needs to start by itself.
+- **`clearBehavior`** was `Destroy`. The effect deletes its own GameObject once it finishes,
+  so the second hit would find nothing there. Set to `None`.
+- **Sorting order** was 0 on every renderer, so the burst drew behind the sprites. Set to 10.
+- **Scale** was built for metre-sized characters. The Pepper is 0.33 units tall, so an
+  unscaled burst covered most of the screen. Hit and parry run at 0.15, the enemy splash
+  at 0.12.
 
-## Suggested prefabs
+The 3D `Point Light` child is switched off on each: it does nothing under the URP 2D
+renderer and still costs. `Play On Awake` is left ticked on the packs' many sub-emitters,
+and the scripts clear it with a single `Stop()` in `Awake` instead.
 
-Starting points from what is installed, not final choices:
+To swap an effect, drop a different Cartoon FX prefab in as a child, apply those three
+overrides, and drag its root `ParticleSystem` (or, for the enemy death, its GameObject)
+into the matching field.
 
-| Where | Prefab |
-|---|---|
-| Attack hit | `CFXR Prefabs/Impacts/CFXR Hit A (Red)` |
-| Attack hit, alt | `CFXR Prefabs/Impacts/CFXR2 Ground Hit` |
-| Parry | `CFXR Prefabs/Impacts/CFXR Impact Glowing HDR (Blue)` |
-| Parry, alt | `CFXR Prefabs/Sword Trails/Plain/CFXR4 Sword Hit PLAIN (Cross)` |
-| Enemy death | `CFXR Prefabs/Liquids/CFXR2 Blood Shape Splash` |
-| Dash trail | already a TrailRenderer on the player — no pack needed |
-| Slash arc | `Matthew Guz/Slash Effects FREE/Prefab/Basic Slash Blue` |
+## Still to do
 
-The board calls for a blood effect made of vegetable pieces rather than blood. `CFXR2 Blood
-Shape Splash` is the right shape to start from — retint it toward paprika red and stem
-green and it reads as pepper rather than gore, which also keeps the game's tone where the
-mood board puts it.
+**Slash Effects FREE needs its materials upgraded** before anything from it can be used.
+Its materials reference legacy Built-in render pipeline shaders, which URP renders as
+magenta. Run *Window > Rendering > Render Pipeline Converter > Built-in to URP > Material
+Upgrade*. This is a menu action in the editor rather than a file change, which is why it
+is not already done. Cartoon FX needs none of this - it ships `.cfxrshader` files that a
+scripted importer compiles for whichever pipeline is active.
 
-`Matthew Guz` slashes are mesh-based and face a fixed direction, so a copy has to be
-rotated per facing. Worth it for the attack arc, not worth it for small impacts.
+The board asks for a blood effect made of vegetable pieces rather than blood. `CFXR2 Blood
+Shape Splash` is the right shape to start from - retint it toward paprika red and stem
+green and it reads as pepper rather than gore, which keeps the tone where the mood board
+puts it.
 
 ## Not needed
 
