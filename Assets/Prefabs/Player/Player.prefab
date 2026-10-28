@@ -400,6 +400,7 @@ MonoBehaviour:
   rb: {fileID: 6704684622186390054}
   controller: {fileID: 2370418495893030950}
   combat: {fileID: 3652982717926528586}
+  parry: {fileID: 2370418495893030951}
   health: {fileID: 4546900063531101816}
   idleAnimName: Idle
   runAnimName: Run
@@ -407,6 +408,8 @@ MonoBehaviour:
   fallAnimName: Fall
   attackAnimName: Attack
   dashAnimName: Dash
+  wallSlideAnimName: Wall-Slide
+  parryAnimName: Croush
   hurtAnimName: Hurt
   deathAnimName: Death
   verticalThreshold: 0.1
@@ -426,6 +429,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PepperParry
   health: {fileID: 4546900063531101816}
   parryPoint: {fileID: 5431404032627540855}
+  spriteRenderer: {fileID: 1102457643944670748}
+  windowColor: {r: 0.55, g: 0.85, b: 1, a: 1}
   combat: {fileID: 3652982717926528586}
   enemyLayers:
     serializedVersion: 2

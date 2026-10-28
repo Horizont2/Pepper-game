@@ -16,6 +16,7 @@ public class PepperAnimator : MonoBehaviour
     [SerializeField] private Rigidbody2D rb;
     [SerializeField] private PepperController controller;
     [SerializeField] private PepperCombat combat;
+    [SerializeField] private PepperParry parry;
     [SerializeField] private HealthComponent health;
 
     [Header("Animation State Names")]
@@ -27,6 +28,8 @@ public class PepperAnimator : MonoBehaviour
     [SerializeField] private string attackAnimName = "Attack";
     [SerializeField] private string dashAnimName = "Dash";
     [SerializeField] private string wallSlideAnimName = "Wall-Slide";
+    [Tooltip("The Warrior placeholder set has no block pose, so a crouch stands in for now.")]
+    [SerializeField] private string parryAnimName = "Croush";
     [SerializeField] private string hurtAnimName = "Hurt";
     [SerializeField] private string deathAnimName = "Death";
 
@@ -36,7 +39,7 @@ public class PepperAnimator : MonoBehaviour
     [Tooltip("How long the hurt animation holds before movement states take over again.")]
     [SerializeField] private float hurtLockDuration = 0.25f;
 
-    private int idleHash, runHash, jumpHash, fallHash, attackHash, dashHash, hurtHash, deathHash, wallSlideHash;
+    private int idleHash, runHash, jumpHash, fallHash, attackHash, dashHash, hurtHash, deathHash, wallSlideHash, parryHash;
 
     private int currentState;
     private float hurtLockUntil;
@@ -47,6 +50,7 @@ public class PepperAnimator : MonoBehaviour
     // (for example two attacks in a row).
     private bool wasAttacking;
     private bool wasDashing;
+    private bool wasParrying;
 
     private void Awake()
     {
@@ -62,6 +66,7 @@ public class PepperAnimator : MonoBehaviour
         attackHash = ResolveState(attackAnimName);
         dashHash = ResolveState(dashAnimName);
         wallSlideHash = ResolveState(wallSlideAnimName);
+        parryHash = ResolveState(parryAnimName);
         hurtHash = ResolveState(hurtAnimName);
         deathHash = ResolveState(deathAnimName);
     }
@@ -122,23 +127,32 @@ public class PepperAnimator : MonoBehaviour
     {
         bool isAttacking = combat != null && combat.IsAttacking;
         bool isDashing = controller != null && controller.IsDashing;
+        bool isParrying = parry != null && parry.IsBusy;
 
-        // A new attack or dash restarts its animation from frame zero,
+        // A new attack, dash or parry restarts its animation from frame zero,
         // even when the resolved state did not technically change.
-        bool forceRestart = (isAttacking && !wasAttacking) || (isDashing && !wasDashing);
+        bool forceRestart = (isAttacking && !wasAttacking)
+                         || (isDashing && !wasDashing)
+                         || (isParrying && !wasParrying);
 
         wasAttacking = isAttacking;
         wasDashing = isDashing;
+        wasParrying = isParrying;
 
-        PlayState(ResolveCurrentState(isAttacking, isDashing), forceRestart);
+        PlayState(ResolveCurrentState(isAttacking, isDashing, isParrying), forceRestart);
     }
 
-    /// <summary>Priority: death -> hurt -> dash -> attack -> wall slide -> airborne -> run -> idle.</summary>
-    private int ResolveCurrentState(bool isAttacking, bool isDashing)
+    /// <summary>Priority: death -> hurt -> dash -> parry -> attack -> wall slide -> airborne -> run -> idle.</summary>
+    private int ResolveCurrentState(bool isAttacking, bool isDashing, bool isParrying)
     {
         if (isDead) return deathHash;
         if (Time.time < hurtLockUntil) return hurtHash;
         if (isDashing) return dashHash;
+
+        // Above attack: the two cannot run together, but a parry is the more committed of
+        // the pair and the one that must stay readable for its whole lock.
+        if (isParrying) return parryHash;
+
         if (isAttacking) return attackHash;
 
         // Above the airborne states: a slide is falling, and would otherwise read as Fall

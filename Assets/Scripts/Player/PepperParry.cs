@@ -26,6 +26,12 @@ public class PepperParry : MonoBehaviour
     [Tooltip("Optional burst on a successful parry. A child of the Pepper, so it needs no spawning.")]
     [SerializeField] private ParticleSystem parryEffect;
 
+    [Header("Readability")]
+    [Tooltip("Tinted for exactly as long as hits are being cancelled, so the window is something " +
+             "the player can see rather than guess at.")]
+    [SerializeField] private SpriteRenderer spriteRenderer;
+    [SerializeField] private Color windowColor = new Color(0.55f, 0.85f, 1f, 1f);
+
     [Header("Timing")]
     [Tooltip("How long incoming hits are cancelled. The forgiveness of the move.")]
     [SerializeField] private float parryWindow = 0.18f;
@@ -71,6 +77,7 @@ public class PepperParry : MonoBehaviour
     private bool canParry = true;
     private bool caughtSomething;
     private float readyTime;
+    private Color colorBeforeWindow;
 
     private void Awake()
     {
@@ -112,6 +119,7 @@ public class PepperParry : MonoBehaviour
     public void CancelParry()
     {
         StopAllCoroutines();
+        SetWindowTint(false);
         IsWindowOpen = false;
         IsBusy = false;
         canParry = true;
@@ -126,10 +134,12 @@ public class PepperParry : MonoBehaviour
 
         IsBusy = true;
         IsWindowOpen = true;
+        SetWindowTint(true);
 
         yield return new WaitForSeconds(parryWindow);
 
         IsWindowOpen = false;
+        SetWindowTint(false);
 
         if (!caughtSomething) OnParryWhiffed?.Invoke();
 
@@ -168,6 +178,25 @@ public class PepperParry : MonoBehaviour
         OnParrySuccess?.Invoke();
 
         return true;
+    }
+
+    /// <summary>
+    /// Captures the colour on the way in rather than at Awake: HitFeedback also tints this
+    /// sprite, and restoring a stale colour would wipe its flash.
+    /// </summary>
+    private void SetWindowTint(bool on)
+    {
+        if (spriteRenderer == null) return;
+
+        if (on)
+        {
+            colorBeforeWindow = spriteRenderer.color;
+            spriteRenderer.color = windowColor;
+        }
+        else
+        {
+            spriteRenderer.color = colorBeforeWindow;
+        }
     }
 
     private void StaggerEnemiesInRange()
