@@ -63,6 +63,37 @@ Transform:
   - {fileID: 7700000000000000002}
   m_Father: {fileID: 3092881144596631807}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &8810000000000000001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8810000000000000002}
+  m_Layer: 8
+  m_Name: WallCheck
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8810000000000000002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8810000000000000001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.035, y: -0.045, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3092881144596631807}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4795655891724114621
 GameObject:
   m_ObjectHideFlags: 0
@@ -83,6 +114,8 @@ GameObject:
   - component: {fileID: 2370418495893030951}
   - component: {fileID: 2370418495893030952}
   - component: {fileID: 2370418495893030953}
+  - component: {fileID: 2370418495893030954}
+  - component: {fileID: 2370418495893030955}
   m_Layer: 8
   m_Name: Player
   m_TagString: Untagged
@@ -103,6 +136,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 8810000000000000002}
   - {fileID: 7700000000000000012}
   - {fileID: 4294846154624479348}
   - {fileID: 5431404032627540855}
@@ -250,6 +284,15 @@ MonoBehaviour:
   groundLayer:
     serializedVersion: 2
     m_Bits: 64
+  wallCheck: {fileID: 8810000000000000002}
+  wallCheckSize: {x: 0.06, y: 0.2}
+  wallLayer:
+    serializedVersion: 2
+    m_Bits: 64
+  wallSlideSpeed: 1.2
+  wallJumpForce: {x: 4, y: 8}
+  wallJumpLockTime: 0.18
+  wallCoyoteTime: 0.12
   dashForce: 6
   dashDuration: 0.15
   dashCooldown: 1.5
@@ -437,6 +480,34 @@ MonoBehaviour:
   respawnPoint: {fileID: 0}
   deathHold: 1.2
   fallKillY: -5
+--- !u!114 &2370418495893030954
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4795655891724114621}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6c47374cd274bde8d545868adc2962c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerRegistrar
+  locator: {fileID: 11400000, guid: 7f0d95a61a8142018d6e873e3ee6528e, type: 2}
+  health: {fileID: 4546900063531101816}
+--- !u!114 &2370418495893030955
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4795655891724114621}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e7b6f378b3e94a9ea87a35688c85c316, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ResourceCounter
+  startingAmount: 0
+  maxAmount: 9999
 --- !u!1 &7508184891571263944
 GameObject:
   m_ObjectHideFlags: 0

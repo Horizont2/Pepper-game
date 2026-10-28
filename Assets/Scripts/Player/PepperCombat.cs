@@ -38,6 +38,12 @@ public class PepperCombat : MonoBehaviour
     /// <summary>True for the whole swing. Read by PepperController and PepperAnimator.</summary>
     public bool IsAttacking { get; private set; }
 
+    /// <summary>A swing started, before anyone knows whether it lands.</summary>
+    public event System.Action OnAttackStarted;
+
+    /// <summary>The swing connected with at least one enemy.</summary>
+    public event System.Action OnAttackHit;
+
     private float nextAttackTime;
 
     private void Awake()
@@ -78,6 +84,7 @@ public class PepperCombat : MonoBehaviour
     {
         // 1. Open the attack (this locks movement via PepperController)
         IsAttacking = true;
+        OnAttackStarted?.Invoke();
 
         // 2. Wind up, so the hit connects partway through the swing
         float windup = Mathf.Clamp(attackWindup, 0f, attackDuration);
@@ -89,6 +96,8 @@ public class PepperCombat : MonoBehaviour
         // 4. Impact feedback (hit stop + camera shake + burst)
         if (hitSuccessful)
         {
+            OnAttackHit?.Invoke();
+
             if (gameFeel != null) gameFeel.TriggerHitImpact(hitStopDuration, shakeDuration, shakeMagnitude);
 
             if (hitEffect != null)

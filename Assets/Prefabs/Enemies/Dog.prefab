@@ -258,6 +258,7 @@ MonoBehaviour:
   health: {fileID: 5011000000000000107}
   animator: {fileID: 5011000000000000104}
   hitFeedback: {fileID: 5011000000000000109}
+  playerLocator: {fileID: 11400000, guid: 7f0d95a61a8142018d6e873e3ee6528e, type: 2}
   player: {fileID: 0}
   patrolPoints: []
   bodyCollider: {fileID: 5011000000000000106}

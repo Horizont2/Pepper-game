@@ -26,6 +26,7 @@ public class PepperAnimator : MonoBehaviour
     [SerializeField] private string fallAnimName = "Fall";
     [SerializeField] private string attackAnimName = "Attack";
     [SerializeField] private string dashAnimName = "Dash";
+    [SerializeField] private string wallSlideAnimName = "Wall-Slide";
     [SerializeField] private string hurtAnimName = "Hurt";
     [SerializeField] private string deathAnimName = "Death";
 
@@ -35,7 +36,7 @@ public class PepperAnimator : MonoBehaviour
     [Tooltip("How long the hurt animation holds before movement states take over again.")]
     [SerializeField] private float hurtLockDuration = 0.25f;
 
-    private int idleHash, runHash, jumpHash, fallHash, attackHash, dashHash, hurtHash, deathHash;
+    private int idleHash, runHash, jumpHash, fallHash, attackHash, dashHash, hurtHash, deathHash, wallSlideHash;
 
     private int currentState;
     private float hurtLockUntil;
@@ -60,6 +61,7 @@ public class PepperAnimator : MonoBehaviour
         fallHash = ResolveState(fallAnimName);
         attackHash = ResolveState(attackAnimName);
         dashHash = ResolveState(dashAnimName);
+        wallSlideHash = ResolveState(wallSlideAnimName);
         hurtHash = ResolveState(hurtAnimName);
         deathHash = ResolveState(deathAnimName);
     }
@@ -131,13 +133,16 @@ public class PepperAnimator : MonoBehaviour
         PlayState(ResolveCurrentState(isAttacking, isDashing), forceRestart);
     }
 
-    /// <summary>Priority: death -> hurt -> dash -> attack -> airborne -> run -> idle.</summary>
+    /// <summary>Priority: death -> hurt -> dash -> attack -> wall slide -> airborne -> run -> idle.</summary>
     private int ResolveCurrentState(bool isAttacking, bool isDashing)
     {
         if (isDead) return deathHash;
         if (Time.time < hurtLockUntil) return hurtHash;
         if (isDashing) return dashHash;
         if (isAttacking) return attackHash;
+
+        // Above the airborne states: a slide is falling, and would otherwise read as Fall
+        if (controller != null && controller.IsWallSliding) return wallSlideHash;
 
         if (rb.linearVelocity.y > verticalThreshold) return jumpHash;
         if (rb.linearVelocity.y < -verticalThreshold) return fallHash;

@@ -37,6 +37,20 @@ public class PlayerDeath : MonoBehaviour
     public event Action OnDied;
     public event Action OnRespawned;
 
+    /// <summary>Raised when a checkpoint takes over, so the previous one can dim itself.</summary>
+    public event Action<Transform> OnRespawnPointChanged;
+
+    public Transform RespawnPoint => respawnPoint;
+
+    /// <summary>Claim this as the place to come back to. Called by a checkpoint.</summary>
+    public void SetRespawnPoint(Transform point)
+    {
+        if (point == null || point == respawnPoint) return;
+
+        respawnPoint = point;
+        OnRespawnPointChanged?.Invoke(point);
+    }
+
     private void Awake()
     {
         if (health == null)

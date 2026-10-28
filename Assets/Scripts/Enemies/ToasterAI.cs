@@ -17,7 +17,10 @@ public class ToasterAI : MonoBehaviour
     [SerializeField] private Animator animator;
     [Tooltip("Optional. While it reports a reaction, this AI stops steering so the hit reads.")]
     [SerializeField] private HitFeedback hitFeedback;
-    [Tooltip("The player in this scene. Assigned per instance, not on the prefab.")]
+    [Tooltip("Shared asset the player publishes itself into. Lets an enemy dropped anywhere " +
+             "find the player with no per-instance wiring and no runtime search.")]
+    [SerializeField] private PlayerLocator playerLocator;
+    [Tooltip("Optional override for one specific instance. Takes priority over the locator.")]
     [SerializeField] private Transform player;
     [SerializeField] private Transform[] patrolPoints;
     [Tooltip("The body collider. Used to work out where this enemy's feet and front edge are.")]
@@ -58,18 +61,30 @@ public class ToasterAI : MonoBehaviour
     [SerializeField] private float attackRecovery = 0.25f;
     [SerializeField] private string attackAnimName = "Attack";
 
+    [Header("Debug")]
+    [Tooltip("Logs every decision this AI makes. Leave off except when something looks wrong.")]
+    [SerializeField] private bool logDecisions;
+
     private int currentPatrolIndex;
     private float nextAttackTime;
     private bool isChasing;
     private bool isAttacking;
     private bool isFacingRight;
     private int attackAnimHash;
+    private string lastReport;
+
+    /// <summary>The instance override if there is one, otherwise whatever the locator holds.</summary>
+    private Transform Target => player != null ? player
+                              : playerLocator != null ? playerLocator.Current
+                              : null;
 
     private void Awake()
     {
         if (rb == null) Debug.LogError($"[ToasterAI] Rigidbody2D is not assigned on '{name}'.", this);
         if (health == null) Debug.LogError($"[ToasterAI] HealthComponent is not assigned on '{name}'.", this);
-        if (player == null) Debug.LogWarning($"[ToasterAI] player is not assigned on '{name}'; this enemy will only patrol.", this);
+
+        if (player == null && playerLocator == null)
+            Debug.LogWarning($"[ToasterAI] '{name}' has neither a player override nor a PlayerLocator, so it will only patrol.", this);
 
         // The art starts unflipped, so logical facing starts at whatever the art does
         isFacingRight = spriteFacesRight;
@@ -116,21 +131,24 @@ public class ToasterAI : MonoBehaviour
         // Let a knockback or a parry stagger play out before taking the wheel back
         if (hitFeedback != null && hitFeedback.IsReacting) return;
 
+        Transform target = Target;
+
         // Committed to a swing: hold still and keep facing the target
         if (isAttacking)
         {
             rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
-            if (player != null) FaceTowards(player.position.x);
+            if (target != null) FaceTowards(target.position.x);
             return;
         }
 
-        if (player == null)
+        if (target == null)
         {
+            Report("no target, patrolling only");
             Patrol();
             return;
         }
 
-        float distanceToPlayer = Vector2.Distance(transform.position, player.position);
+        float distanceToPlayer = Vector2.Distance(transform.position, target.position);
 
         if (distanceToPlayer <= detectionRange)
         {
@@ -143,6 +161,7 @@ public class ToasterAI : MonoBehaviour
 
         if (!isChasing)
         {
+            Report("patrolling, player out of range");
             Patrol();
             return;
         }
@@ -150,17 +169,28 @@ public class ToasterAI : MonoBehaviour
         // Face the player for the whole chase, not only while moving. Steering off
         // velocity alone left the enemy swinging at empty air whenever the player
         // stepped around it.
-        FaceTowards(player.position.x);
+        FaceTowards(target.position.x);
 
         if (distanceToPlayer <= stopDistance)
         {
+            Report("in range, swinging");
             rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
             TryAttack();
         }
         else
         {
+            Report("chasing");
             ChasePlayer();
         }
+    }
+
+    /// <summary>Logs a state only when it changes, so the console is readable.</summary>
+    private void Report(string state)
+    {
+        if (!logDecisions || state == lastReport) return;
+
+        lastReport = state;
+        Debug.Log($"[ToasterAI] {name}: {state}", this);
     }
 
     private void Patrol()
@@ -195,7 +225,10 @@ public class ToasterAI : MonoBehaviour
 
     private void ChasePlayer()
     {
-        float direction = Mathf.Sign(player.position.x - transform.position.x);
+        Transform target = Target;
+        if (target == null) return;
+
+        float direction = Mathf.Sign(target.position.x - transform.position.x);
 
         // Hold at the edge. It keeps facing the player and will still swing if they come
         // back into reach - better than a suicide run, and it reads as the enemy being wary.
@@ -251,10 +284,24 @@ public class ToasterAI : MonoBehaviour
 
         // Only connects if the player is still in reach when the swing lands
         Collider2D hit = Physics2D.OverlapCircle(transform.position, attackRange, playerLayer);
-        if (hit != null)
+
+        if (hit == null)
+        {
+            if (logDecisions) Debug.Log($"[ToasterAI] {name}: swing found nothing on layer mask {playerLayer.value} within {attackRange}", this);
+        }
+        else
         {
             HealthComponent playerHealth = hit.GetComponent<HealthComponent>();
-            if (playerHealth != null) playerHealth.TakeDamage(attackDamage, transform.position);
+
+            if (playerHealth == null)
+            {
+                if (logDecisions) Debug.Log($"[ToasterAI] {name}: swing hit '{hit.name}' but it has no HealthComponent", this);
+            }
+            else
+            {
+                playerHealth.TakeDamage(attackDamage, transform.position);
+                if (logDecisions) Debug.Log($"[ToasterAI] {name}: dealt {attackDamage} to '{playerHealth.name}', now {playerHealth.CurrentHealth}/{playerHealth.MaxHealth}", this);
+            }
         }
 
         if (attackRecovery > 0f) yield return new WaitForSeconds(attackRecovery);

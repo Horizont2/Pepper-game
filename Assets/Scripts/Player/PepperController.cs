@@ -44,6 +44,20 @@ public class PepperController : MonoBehaviour
     [SerializeField] private Vector2 groundCheckSize = new Vector2(0.5f, 0.1f);
     [SerializeField] private LayerMask groundLayer;
 
+    [Header("Wall Movement")]
+    [Tooltip("Empty child out in front at body height. It mirrors with the sprite, so one marker serves both sides.")]
+    [SerializeField] private Transform wallCheck;
+    [SerializeField] private Vector2 wallCheckSize = new Vector2(0.06f, 0.22f);
+    [SerializeField] private LayerMask wallLayer;
+    [Tooltip("Capped fall speed while sliding down a wall.")]
+    [SerializeField] private float wallSlideSpeed = 1.2f;
+    [Tooltip("Push away from the wall. X is the shove off it, Y the lift.")]
+    [SerializeField] private Vector2 wallJumpForce = new Vector2(4f, 8f);
+    [Tooltip("Movement input ignored right after a wall jump, or holding into the wall cancels it instantly.")]
+    [SerializeField] private float wallJumpLockTime = 0.18f;
+    [Tooltip("Grace period after leaving a wall where a wall jump still counts.")]
+    [SerializeField] private float wallCoyoteTime = 0.12f;
+
     [Header("Dash Settings")]
     [SerializeField] private float dashForce = 24f;
     [SerializeField] private float dashDuration = 0.15f;
@@ -69,10 +83,27 @@ public class PepperController : MonoBehaviour
     private float defaultGravityScale;
     private LayerMask defaultExcludeLayers;
 
+    private float wallCoyoteCounter;
+    private float wallJumpLockUntil;
+
     // Read by PepperAnimator and other systems
     public bool IsDashing { get; private set; }
     public bool IsGrounded { get; private set; }
     public bool IsFacingRight => isFacingRight;
+    public bool IsTouchingWall { get; private set; }
+    public bool IsWallSliding { get; private set; }
+
+    /// <summary>Raised the moment a wall jump fires, for audio and effects.</summary>
+    public event System.Action OnWallJumped;
+
+    /// <summary>A normal jump left the ground.</summary>
+    public event System.Action OnJumped;
+
+    /// <summary>A dash started.</summary>
+    public event System.Action OnDashed;
+
+    /// <summary>Touched down after being airborne.</summary>
+    public event System.Action OnLanded;
 
     /// <summary>0 while the dash has just been spent, 1 when it is ready again. Drives the HUD slot.</summary>
     public float DashCooldownProgress
@@ -107,9 +138,13 @@ public class PepperController : MonoBehaviour
         StopAllCoroutines();
 
         IsDashing = false;
+        IsWallSliding = false;
+        IsTouchingWall = false;
         canDash = true;
         jumpBufferCounter = 0f;
         coyoteTimeCounter = 0f;
+        wallCoyoteCounter = 0f;
+        wallJumpLockUntil = 0f;
         jumpCooldownTimer = 0f;
         horizontalInput = 0f;
 
@@ -180,6 +215,15 @@ public class PepperController : MonoBehaviour
             return;
         }
 
+        // The slide owns the fall: cap it and skip the extra gravity, or the clamp and
+        // the fall multiplier fight each other and the slide stutters.
+        if (IsWallSliding)
+        {
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x,
+                Mathf.Max(rb.linearVelocity.y, -wallSlideSpeed));
+            return;
+        }
+
         // A grounded committed action kills horizontal speed entirely, which gives it weight
         if (IsActionLocked && IsGrounded)
         {
@@ -222,15 +266,37 @@ public class PepperController : MonoBehaviour
         {
             coyoteTimeCounter -= Time.deltaTime;
         }
+
+        // The same grace idea as coyote time, for leaving a wall
+        if (IsWallSliding) wallCoyoteCounter = wallCoyoteTime;
+        else wallCoyoteCounter -= Time.deltaTime;
     }
 
     private void CheckEnvironment()
     {
+        bool wasGrounded = IsGrounded;
+
         IsGrounded = Physics2D.OverlapBox(groundCheck.position, groundCheckSize, 0f, groundLayer);
+
+        // Edge-triggered, so landing fires once rather than every frame on the floor
+        if (IsGrounded && !wasGrounded) OnLanded?.Invoke();
+
+        IsTouchingWall = wallCheck != null &&
+                         Physics2D.OverlapBox(wallCheck.position, wallCheckSize, 0f, wallLayer);
+
+        // A slide needs the player to still be holding into the wall. Without that test
+        // the Pepper sticks to every surface it so much as brushes past in mid-air.
+        bool holdingIntoWall = Mathf.Abs(horizontalInput) > 0.01f && (horizontalInput > 0f) == isFacingRight;
+
+        IsWallSliding = IsTouchingWall && !IsGrounded && rb.linearVelocity.y < 0f && holdingIntoWall;
     }
 
     private void HandleMovement()
     {
+        // Right after a wall jump the input is ignored. Otherwise holding back toward the
+        // wall cancels the push before it has carried the Pepper anywhere.
+        if (Time.time < wallJumpLockUntil) return;
+
         float targetSpeed = horizontalInput * moveSpeed;
         float speedDifference = targetSpeed - rb.linearVelocity.x;
         float accelRate = (Mathf.Abs(targetSpeed) > 0.01f) ? acceleration : deceleration;
@@ -251,7 +317,17 @@ public class PepperController : MonoBehaviour
 
     private void HandleJump()
     {
-        if (jumpBufferCounter > 0f && coyoteTimeCounter > 0f && jumpCooldownTimer <= 0f)
+        if (jumpBufferCounter <= 0f) return;
+
+        // Off the ground and still within the wall's grace period: this is a wall jump.
+        // Checked first, or the ground jump would swallow the press.
+        if (!IsGrounded && wallCoyoteCounter > 0f)
+        {
+            PerformWallJump();
+            return;
+        }
+
+        if (coyoteTimeCounter > 0f && jumpCooldownTimer <= 0f)
         {
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0f);
             rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
@@ -259,7 +335,30 @@ public class PepperController : MonoBehaviour
             jumpBufferCounter = 0f;
             coyoteTimeCounter = 0f;
             jumpCooldownTimer = jumpCooldown;
+
+            OnJumped?.Invoke();
         }
+    }
+
+    private void PerformWallJump()
+    {
+        float away = isFacingRight ? -1f : 1f;
+
+        // Set the velocity outright rather than adding force: the push has to beat
+        // whatever downward speed the slide had built up.
+        rb.linearVelocity = new Vector2(away * wallJumpForce.x, wallJumpForce.y);
+
+        // Turn to face the way the Pepper is now travelling
+        if ((away > 0f) != isFacingRight) Flip();
+
+        jumpBufferCounter = 0f;
+        wallCoyoteCounter = 0f;
+        coyoteTimeCounter = 0f;
+        jumpCooldownTimer = jumpCooldown;
+        wallJumpLockUntil = Time.time + wallJumpLockTime;
+        IsWallSliding = false;
+
+        OnWallJumped?.Invoke();
     }
 
     /// <summary>Fall faster than we rise, and cut the jump short when the button is released.</summary>
@@ -277,6 +376,9 @@ public class PepperController : MonoBehaviour
 
     private void FlipController()
     {
+        // The wall jump already set the facing; let it stand for the lock
+        if (Time.time < wallJumpLockUntil) return;
+
         if (horizontalInput > 0f && !isFacingRight) Flip();
         else if (horizontalInput < 0f && isFacingRight) Flip();
     }
@@ -294,6 +396,8 @@ public class PepperController : MonoBehaviour
         canDash = false;
         dashReadyTime = Time.time + dashDuration + dashCooldown;
         IsDashing = true;
+
+        OnDashed?.Invoke();
 
         float originalGravity = rb.gravityScale;
         rb.gravityScale = 0f;
@@ -328,6 +432,12 @@ public class PepperController : MonoBehaviour
         {
             Gizmos.color = Color.green;
             Gizmos.DrawWireCube(groundCheck.position, groundCheckSize);
+        }
+
+        if (wallCheck != null)
+        {
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawWireCube(wallCheck.position, wallCheckSize);
         }
     }
 }
