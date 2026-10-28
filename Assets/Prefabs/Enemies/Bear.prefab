@@ -216,8 +216,8 @@ MonoBehaviour:
   rb: {fileID: 5011000000000000605}
   flashColor: {r: 1, g: 1, b: 1, a: 1}
   flashDuration: 0.08
-  knockbackForce: 5
-  knockbackLift: 2.5
+  knockbackForce: 2
+  knockbackLift: 1.2
   knockbackDuration: 0.18
   staggerColor: {r: 1, g: 0.85, b: 0.4, a: 1}
 --- !u!114 &5011000000000000610
@@ -260,8 +260,8 @@ MonoBehaviour:
   hitFeedback: {fileID: 5011000000000000609}
   player: {fileID: 0}
   patrolPoints: []
-  patrolSpeed: 1.0
-  chaseSpeed: 2.6
+  patrolSpeed: 0.5
+  chaseSpeed: 1.5
   patrolPointReachedDistance: 0.12
   detectionRange: 3.2
   attackRange: 0.513
