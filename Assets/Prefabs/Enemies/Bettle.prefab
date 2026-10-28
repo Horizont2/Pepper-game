@@ -260,6 +260,12 @@ MonoBehaviour:
   hitFeedback: {fileID: 5011000000000000209}
   player: {fileID: 0}
   patrolPoints: []
+  bodyCollider: {fileID: 5011000000000000206}
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 64
+  groundProbeDepth: 0.25
+  probeAhead: 0.08
   spriteFacesRight: 0
   patrolSpeed: 0.4
   chaseSpeed: 1.0

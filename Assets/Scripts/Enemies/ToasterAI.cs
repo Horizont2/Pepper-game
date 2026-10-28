@@ -20,6 +20,16 @@ public class ToasterAI : MonoBehaviour
     [Tooltip("The player in this scene. Assigned per instance, not on the prefab.")]
     [SerializeField] private Transform player;
     [SerializeField] private Transform[] patrolPoints;
+    [Tooltip("The body collider. Used to work out where this enemy's feet and front edge are.")]
+    [SerializeField] private Collider2D bodyCollider;
+
+    [Header("Edge And Wall Detection")]
+    [Tooltip("What counts as solid footing. Without it the enemy happily walks off every platform.")]
+    [SerializeField] private LayerMask groundLayer;
+    [Tooltip("How far below the feet still counts as floor. Any further down is a drop.")]
+    [SerializeField] private float groundProbeDepth = 0.25f;
+    [Tooltip("How far in front of the body to look for that floor, or for a wall.")]
+    [SerializeField] private float probeAhead = 0.08f;
 
     [Header("Facing")]
     [Tooltip("Untick when the source art faces left by default, so flipping is not inverted.")]
@@ -161,8 +171,18 @@ public class ToasterAI : MonoBehaviour
         if (targetPoint == null) return;
 
         float dx = targetPoint.position.x - transform.position.x;
+        float direction = Mathf.Sign(dx);
 
-        rb.linearVelocity = new Vector2(Mathf.Sign(dx) * patrolSpeed, rb.linearVelocity.y);
+        // Turn back at a drop or a wall rather than marching into it. Taking the next
+        // patrol point reverses the walk, which is what a marker pair means anyway.
+        if (!CanAdvance(direction))
+        {
+            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+            currentPatrolIndex = (currentPatrolIndex + 1) % patrolPoints.Length;
+            return;
+        }
+
+        rb.linearVelocity = new Vector2(direction * patrolSpeed, rb.linearVelocity.y);
         FaceTowards(targetPoint.position.x);
 
         // X only: a marker placed slightly above or below the floor would otherwise never
@@ -175,8 +195,37 @@ public class ToasterAI : MonoBehaviour
 
     private void ChasePlayer()
     {
-        float dx = player.position.x - transform.position.x;
-        rb.linearVelocity = new Vector2(Mathf.Sign(dx) * chaseSpeed, rb.linearVelocity.y);
+        float direction = Mathf.Sign(player.position.x - transform.position.x);
+
+        // Hold at the edge. It keeps facing the player and will still swing if they come
+        // back into reach - better than a suicide run, and it reads as the enemy being wary.
+        if (!CanAdvance(direction))
+        {
+            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+            return;
+        }
+
+        rb.linearVelocity = new Vector2(direction * chaseSpeed, rb.linearVelocity.y);
+    }
+
+    /// <summary>False when the next step would walk off a ledge or into a wall.</summary>
+    private bool CanAdvance(float direction)
+    {
+        // With nothing configured to test against, never block movement
+        if (bodyCollider == null || groundLayer.value == 0) return true;
+
+        Bounds bounds = bodyCollider.bounds;
+        float frontX = direction > 0f ? bounds.max.x : bounds.min.x;
+
+        // Is there floor just ahead of the leading foot?
+        Vector2 footProbe = new Vector2(frontX + direction * probeAhead, bounds.min.y + 0.02f);
+        if (!Physics2D.Raycast(footProbe, Vector2.down, groundProbeDepth, groundLayer)) return false;
+
+        // Is something solid in the way at body height?
+        Vector2 sideProbe = new Vector2(frontX, bounds.center.y);
+        if (Physics2D.Raycast(sideProbe, new Vector2(direction, 0f), probeAhead + 0.04f, groundLayer)) return false;
+
+        return true;
     }
 
     private void TryAttack()
@@ -250,5 +299,22 @@ public class ToasterAI : MonoBehaviour
         Gizmos.DrawWireSphere(transform.position, attackRange);
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, stopDistance);
+
+        if (bodyCollider == null) return;
+
+        // The edge probes, both ways, so a patrol route can be placed by eye
+        Bounds bounds = bodyCollider.bounds;
+        Gizmos.color = Color.cyan;
+
+        foreach (float direction in new[] { -1f, 1f })
+        {
+            float frontX = direction > 0f ? bounds.max.x : bounds.min.x;
+
+            Vector3 foot = new Vector3(frontX + direction * probeAhead, bounds.min.y + 0.02f, 0f);
+            Gizmos.DrawLine(foot, foot + Vector3.down * groundProbeDepth);
+
+            Vector3 side = new Vector3(frontX, bounds.center.y, 0f);
+            Gizmos.DrawLine(side, side + Vector3.right * direction * (probeAhead + 0.04f));
+        }
     }
 }
