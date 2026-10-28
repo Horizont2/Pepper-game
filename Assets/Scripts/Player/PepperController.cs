@@ -16,6 +16,8 @@ public class PepperController : MonoBehaviour
     [SerializeField] private Collider2D playerCollider;
     [SerializeField] private PepperCombat combat;
     [SerializeField] private PepperParry parry;
+    [Tooltip("Needed for the dash to actually grant invulnerability, not just pass through bodies.")]
+    [SerializeField] private HealthComponent health;
 
     [Header("Movement Settings")]
     [SerializeField] private float moveSpeed = 10f;
@@ -55,6 +57,7 @@ public class PepperController : MonoBehaviour
     private bool isFacingRight = true;
 
     private bool canDash = true;
+    private bool jumpHeld;
     private float dashReadyTime;
     private LayerMask excludeLayersBeforeDash;
 
@@ -84,12 +87,32 @@ public class PepperController : MonoBehaviour
         if (groundCheck == null) Debug.LogError($"[PepperController] groundCheck is not assigned on '{name}'.", this);
     }
 
+    private void OnEnable()
+    {
+        // excludeLayers only stops physical contact. Enemy attacks land through an
+        // overlap query, which ignores it entirely, so without this the dash looked
+        // like i-frames and granted none.
+        if (health != null) health.DamageAbsorber += AbsorbWhileDashing;
+    }
+
+    private void OnDisable()
+    {
+        if (health != null) health.DamageAbsorber -= AbsorbWhileDashing;
+    }
+
+    private bool AbsorbWhileDashing(Vector2 sourcePosition) => IsDashing;
+
     /// <summary>Attacking or parrying both root the Pepper in place.</summary>
     private bool IsActionLocked =>
         (combat != null && combat.IsAttacking) || (parry != null && parry.IsBusy);
 
     private void Update()
     {
+        // Polled here rather than in FixedUpdate: a physics step can run zero or several
+        // times per frame, so reading a button there drops or repeats presses and the
+        // variable jump height becomes frame-rate dependent.
+        jumpHeld = Input.GetButton("Jump");
+
         if (IsDashing) return;
 
         bool locked = IsActionLocked;
@@ -207,7 +230,7 @@ public class PepperController : MonoBehaviour
         {
             rb.linearVelocity += Vector2.up * Physics2D.gravity.y * (fallMultiplier - 1) * Time.fixedDeltaTime;
         }
-        else if (rb.linearVelocity.y > 0 && !Input.GetButton("Jump"))
+        else if (rb.linearVelocity.y > 0 && !jumpHeld)
         {
             rb.linearVelocity += Vector2.up * Physics2D.gravity.y * (lowJumpMultiplier - 1) * Time.fixedDeltaTime;
         }

@@ -32,8 +32,12 @@ public class ParallaxLayer : MonoBehaviour
     [SerializeField] private float tileWidth;
     [SerializeField] private SpriteRenderer spriteRenderer;
 
-    private Vector3 previousCameraPosition;
-    private float travelSinceSnap;
+    // Anchors rather than a running total. Integrating a per-frame delta accumulates
+    // rounding error over a long level and leaves the layer permanently offset if the
+    // camera is ever teleported - a respawn, a room transition. Measuring against a
+    // fixed origin each frame cannot drift and self-corrects after any jump.
+    private Vector3 startPosition;
+    private Vector3 startCameraPosition;
 
     private void Awake()
     {
@@ -61,31 +65,27 @@ public class ParallaxLayer : MonoBehaviour
 
     private void Start()
     {
-        previousCameraPosition = cameraTransform.position;
+        startPosition = transform.position;
+        startCameraPosition = cameraTransform.position;
     }
 
     private void LateUpdate()
     {
-        Vector3 cameraDelta = cameraTransform.position - previousCameraPosition;
-        previousCameraPosition = cameraTransform.position;
+        Vector3 travel = cameraTransform.position - startCameraPosition;
 
-        Vector3 move = new Vector3(
-            cameraDelta.x * parallaxFactor,
-            affectY ? cameraDelta.y * parallaxFactor : 0f,
+        Vector3 target = startPosition + new Vector3(
+            travel.x * parallaxFactor,
+            affectY ? travel.y * parallaxFactor : 0f,
             0f);
 
-        transform.position += move;
+        if (infiniteScroll && tileWidth > 0f)
+        {
+            // The layer falls behind the camera at (1 - factor) of its travel. Shifting
+            // by whole tiles cancels that out, and is seamless if the art tiles.
+            float lag = travel.x * (1f - parallaxFactor);
+            target.x += Mathf.Round(lag / tileWidth) * tileWidth;
+        }
 
-        if (!infiniteScroll) return;
-
-        // The layer falls behind the camera at (1 - factor) of the camera's travel.
-        // Once that reaches one tile, snap forward by a tile - seamless if the art tiles.
-        travelSinceSnap += cameraDelta.x * (1f - parallaxFactor);
-
-        if (Mathf.Abs(travelSinceSnap) < tileWidth) return;
-
-        float snap = Mathf.Sign(travelSinceSnap) * tileWidth;
-        transform.position += new Vector3(snap, 0f, 0f);
-        travelSinceSnap -= snap;
+        transform.position = target;
     }
 }

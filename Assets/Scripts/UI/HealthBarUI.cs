@@ -65,6 +65,13 @@ public class HealthBarUI : MonoBehaviour
     private void Subscribe(HealthComponent h)
     {
         if (h == null) return;
+
+        // Detach first. SnapToTarget can re-activate the root GameObject, which fires
+        // OnEnable again from inside SetTarget - without this every handler would be
+        // attached twice and each damage event would be processed twice.
+        h.OnHealthChanged -= HandleHealthChanged;
+        h.OnDied -= HandleDied;
+
         h.OnHealthChanged += HandleHealthChanged;
         h.OnDied += HandleDied;
     }

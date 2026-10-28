@@ -231,6 +231,7 @@ MonoBehaviour:
   playerCollider: {fileID: 4415461030121459628}
   combat: {fileID: 3652982717926528586}
   parry: {fileID: 2370418495893030951}
+  health: {fileID: 4546900063531101816}
   moveSpeed: 10
   acceleration: 13
   deceleration: 16
@@ -295,7 +296,7 @@ CapsuleCollider2D:
     m_Bits: 0
   m_ExcludeLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 128
   m_LayerOverridePriority: 0
   m_ForceSendLayers:
     serializedVersion: 2

@@ -23,6 +23,17 @@ public class GameFeelManager : MonoBehaviour
             Debug.LogWarning($"[GameFeelManager] cameraShake is not assigned on '{name}'; hits will have no screen shake.", this);
     }
 
+    private void OnDisable()
+    {
+        // A hit stop freezes time and only the coroutine thaws it. If this is disabled or
+        // destroyed mid-freeze - a scene change on the frame a hit landed - the coroutine
+        // never resumes and the whole game stays frozen with no way back.
+        if (activeHitStops <= 0) return;
+
+        activeHitStops = 0;
+        Time.timeScale = timeScaleBeforeHitStop;
+    }
+
     /// <summary>Call this when a hit connects.</summary>
     public void TriggerHitImpact(float stopDuration = 0.05f, float shakeDuration = 0.1f, float shakeMagnitude = 0.15f)
     {
