@@ -28,6 +28,9 @@ public class PepperAnimator : MonoBehaviour
     [SerializeField] private string attackAnimName = "Attack";
     [SerializeField] private string dashAnimName = "Dash";
     [SerializeField] private string wallSlideAnimName = "Wall-Slide";
+    [Tooltip("The catch. Plays once, then settles into the hang below.")]
+    [SerializeField] private string ledgeGrabAnimName = "Edge-Grab";
+    [SerializeField] private string ledgeIdleAnimName = "Edge-Idle";
     [Tooltip("The Warrior placeholder set has no block pose, so a crouch stands in for now.")]
     [SerializeField] private string parryAnimName = "Croush";
     [SerializeField] private string hurtAnimName = "Hurt";
@@ -38,8 +41,11 @@ public class PepperAnimator : MonoBehaviour
     [SerializeField] private float horizontalThreshold = 0.1f;
     [Tooltip("How long the hurt animation holds before movement states take over again.")]
     [SerializeField] private float hurtLockDuration = 0.25f;
+    [Tooltip("How long the catch plays before it settles into the hang.")]
+    [SerializeField] private float ledgeGrabLeadIn = 0.25f;
 
     private int idleHash, runHash, jumpHash, fallHash, attackHash, dashHash, hurtHash, deathHash, wallSlideHash, parryHash;
+    private int ledgeGrabHash, ledgeIdleHash;
 
     private int currentState;
     private float hurtLockUntil;
@@ -51,6 +57,8 @@ public class PepperAnimator : MonoBehaviour
     private bool wasAttacking;
     private bool wasDashing;
     private bool wasParrying;
+    private bool wasLedgeHanging;
+    private float ledgeGrabUntil;
 
     private void Awake()
     {
@@ -66,6 +74,8 @@ public class PepperAnimator : MonoBehaviour
         attackHash = ResolveState(attackAnimName);
         dashHash = ResolveState(dashAnimName);
         wallSlideHash = ResolveState(wallSlideAnimName);
+        ledgeGrabHash = ResolveState(ledgeGrabAnimName);
+        ledgeIdleHash = ResolveState(ledgeIdleAnimName);
         parryHash = ResolveState(parryAnimName);
         hurtHash = ResolveState(hurtAnimName);
         deathHash = ResolveState(deathAnimName);
@@ -128,21 +138,28 @@ public class PepperAnimator : MonoBehaviour
         bool isAttacking = combat != null && combat.IsAttacking;
         bool isDashing = controller != null && controller.IsDashing;
         bool isParrying = parry != null && parry.IsBusy;
+        bool isLedgeHanging = controller != null && controller.IsLedgeHanging;
 
-        // A new attack, dash or parry restarts its animation from frame zero,
+        // The catch gets its own beat before the hang takes over, so the grab is something
+        // that happens rather than a pose the Pepper is suddenly in.
+        if (isLedgeHanging && !wasLedgeHanging) ledgeGrabUntil = Time.time + ledgeGrabLeadIn;
+
+        // A new attack, dash, parry or ledge catch restarts its animation from frame zero,
         // even when the resolved state did not technically change.
         bool forceRestart = (isAttacking && !wasAttacking)
                          || (isDashing && !wasDashing)
-                         || (isParrying && !wasParrying);
+                         || (isParrying && !wasParrying)
+                         || (isLedgeHanging && !wasLedgeHanging);
 
         wasAttacking = isAttacking;
         wasDashing = isDashing;
         wasParrying = isParrying;
+        wasLedgeHanging = isLedgeHanging;
 
         PlayState(ResolveCurrentState(isAttacking, isDashing, isParrying), forceRestart);
     }
 
-    /// <summary>Priority: death -> hurt -> dash -> parry -> attack -> wall slide -> airborne -> run -> idle.</summary>
+    /// <summary>Priority: death -> hurt -> dash -> parry -> attack -> ledge -> wall slide -> airborne -> run -> idle.</summary>
     private int ResolveCurrentState(bool isAttacking, bool isDashing, bool isParrying)
     {
         if (isDead) return deathHash;
@@ -154,6 +171,11 @@ public class PepperAnimator : MonoBehaviour
         if (isParrying) return parryHash;
 
         if (isAttacking) return attackHash;
+
+        // Above the wall slide: a hang starts as one touch of the wall and would otherwise
+        // flicker between the two on the frame it is caught
+        if (controller != null && controller.IsLedgeHanging)
+            return Time.time < ledgeGrabUntil ? ledgeGrabHash : ledgeIdleHash;
 
         // Above the airborne states: a slide is falling, and would otherwise read as Fall
         if (controller != null && controller.IsWallSliding) return wallSlideHash;

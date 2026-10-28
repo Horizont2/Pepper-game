@@ -26,6 +26,10 @@ public class AudioManager : MonoBehaviour
     [SerializeField] private GameSound land = new GameSound();
     [SerializeField] private GameSound dash = new GameSound();
     [SerializeField] private GameSound wallJump = new GameSound();
+    [Tooltip("The catch - hands hitting the lip of a ledge.")]
+    [SerializeField] private GameSound ledgeGrab = new GameSound();
+    [Tooltip("Pulling up over it. The drop off a ledge is silent on purpose.")]
+    [SerializeField] private GameSound ledgeClimb = new GameSound();
     [Tooltip("Not called yet - there is no footstep trigger on the walk cycle so far.")]
     [SerializeField] private GameSound footstep = new GameSound();
 
@@ -78,6 +82,8 @@ public class AudioManager : MonoBehaviour
             playerController.OnLanded += HandleLanded;
             playerController.OnDashed += PlayDash;
             playerController.OnWallJumped += PlayWallJump;
+            playerController.OnLedgeGrabbed += PlayLedgeGrab;
+            playerController.OnLedgeClimbed += PlayLedgeClimb;
         }
 
         if (playerCombat != null)
@@ -110,6 +116,8 @@ public class AudioManager : MonoBehaviour
             playerController.OnLanded -= HandleLanded;
             playerController.OnDashed -= PlayDash;
             playerController.OnWallJumped -= PlayWallJump;
+            playerController.OnLedgeGrabbed -= PlayLedgeGrab;
+            playerController.OnLedgeClimbed -= PlayLedgeClimb;
         }
 
         if (playerCombat != null)
@@ -146,6 +154,8 @@ public class AudioManager : MonoBehaviour
     private void HandleLanded(float fallSpeed) => PlayLand();
     public void PlayDash() => Play(dash);
     public void PlayWallJump() => Play(wallJump);
+    public void PlayLedgeGrab() => Play(ledgeGrab);
+    public void PlayLedgeClimb() => Play(ledgeClimb);
     public void PlayFootstep() => Play(footstep);
 
     public void PlayAttackSwing() => Play(attackSwing);

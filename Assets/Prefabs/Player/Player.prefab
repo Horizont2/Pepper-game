@@ -61,6 +61,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 7700000000000000002}
+  - {fileID: 8830000000000000002}
   m_Father: {fileID: 3092881144596631807}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8810000000000000001
@@ -91,8 +92,7 @@ Transform:
   m_LocalPosition: {x: 0.035, y: -0.045, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 8830000000000000002}
+  m_Children: []
   m_Father: {fileID: 3092881144596631807}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4795655891724114621
@@ -139,6 +139,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8810000000000000002}
+  - {fileID: 8850000000000000002}
   - {fileID: 8820000000000000002}
   - {fileID: 8820000000000000010}
   - {fileID: 8820000000000000014}
@@ -303,6 +304,10 @@ MonoBehaviour:
   wallJumpForce: {x: 4, y: 8}
   wallJumpLockTime: 0.18
   wallCoyoteTime: 0.12
+  ledgeCheck: {fileID: 8850000000000000002}
+  ledgeCheckSize: {x: 0.06, y: 0.08}
+  ledgeClimbForce: {x: 3, y: 5.5}
+  ledgeReleaseLock: 0.3
   dashForce: 6
   dashDuration: 0.15
   dashCooldown: 1.5
@@ -417,12 +422,15 @@ MonoBehaviour:
   attackAnimName: Attack
   dashAnimName: Dash
   wallSlideAnimName: Wall-Slide
+  ledgeGrabAnimName: Edge-Grab
+  ledgeIdleAnimName: Edge-Idle
   parryAnimName: Croush
   hurtAnimName: Hurt
   deathAnimName: Death
   verticalThreshold: 0.1
   horizontalThreshold: 0.1
   hurtLockDuration: 0.25
+  ledgeGrabLeadIn: 0.5
 --- !u!114 &2370418495893030951
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1607,3 +1615,34 @@ ParticleSystem:
   m_CorrespondingSourceObject: {fileID: 2708598583397607910, guid: 6398d43fe79ea0140913dc5530c646af, type: 3}
   m_PrefabInstance: {fileID: 7700000000000000011}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &8850000000000000001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8850000000000000002}
+  m_Layer: 8
+  m_Name: LedgeCheck
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8850000000000000002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8850000000000000001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.035, y: 0.165, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3092881144596631807}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

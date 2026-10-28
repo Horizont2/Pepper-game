@@ -65,6 +65,16 @@ public class PepperController : MonoBehaviour
     [Tooltip("Grace period after leaving a wall where a wall jump still counts.")]
     [SerializeField] private float wallCoyoteTime = 0.12f;
 
+    [Header("Ledge Grab")]
+    [Tooltip("Empty child just above the head, in the same column as wallCheck. A wall at " +
+             "the wall check with nothing here is a ledge.")]
+    [SerializeField] private Transform ledgeCheck;
+    [SerializeField] private Vector2 ledgeCheckSize = new Vector2(0.06f, 0.08f);
+    [Tooltip("The push that carries the Pepper over the lip. X is forward, Y is the lift.")]
+    [SerializeField] private Vector2 ledgeClimbForce = new Vector2(3f, 5.5f);
+    [Tooltip("After letting go, how long before the same ledge can be caught again.")]
+    [SerializeField] private float ledgeReleaseLock = 0.3f;
+
     [Header("Dash Settings")]
     [SerializeField] private float dashForce = 24f;
     [SerializeField] private float dashDuration = 0.15f;
@@ -92,6 +102,7 @@ public class PepperController : MonoBehaviour
 
     private float wallCoyoteCounter;
     private float wallJumpLockUntil;
+    private float ledgeLockUntil;
 
     // Read by PepperAnimator and other systems
     public bool IsDashing { get; private set; }
@@ -99,6 +110,9 @@ public class PepperController : MonoBehaviour
     public bool IsFacingRight => isFacingRight;
     public bool IsTouchingWall { get; private set; }
     public bool IsWallSliding { get; private set; }
+
+    /// <summary>Hanging off a ledge by the hands. Movement, gravity and the jump all defer to it.</summary>
+    public bool IsLedgeHanging { get; private set; }
 
     /// <summary>Raised the moment a wall jump fires, for audio and effects.</summary>
     public event System.Action OnWallJumped;
@@ -108,6 +122,12 @@ public class PepperController : MonoBehaviour
 
     /// <summary>A dash started.</summary>
     public event System.Action OnDashed;
+
+    /// <summary>Caught a ledge.</summary>
+    public event System.Action OnLedgeGrabbed;
+
+    /// <summary>Pulled up over a ledge rather than dropping off it.</summary>
+    public event System.Action OnLedgeClimbed;
 
     /// <summary>Touched down after being airborne. Carries the downward speed on impact,
     /// so a gentle step off a kerb and a long drop can be told apart.</summary>
@@ -148,11 +168,13 @@ public class PepperController : MonoBehaviour
         IsDashing = false;
         IsWallSliding = false;
         IsTouchingWall = false;
+        IsLedgeHanging = false;
         canDash = true;
         jumpBufferCounter = 0f;
         coyoteTimeCounter = 0f;
         wallCoyoteCounter = 0f;
         wallJumpLockUntil = 0f;
+        ledgeLockUntil = 0f;
         jumpCooldownTimer = 0f;
         horizontalInput = 0f;
 
@@ -205,6 +227,14 @@ public class PepperController : MonoBehaviour
         UpdateTimers();
         CheckEnvironment();
 
+        // The hang owns the jump button - pulling up over the lip is what it is for - and
+        // the facing has to stay into the wall, so the flip is skipped as well.
+        if (IsLedgeHanging)
+        {
+            HandleLedgeHang();
+            return;
+        }
+
         // No jumping out of an attack or a parry
         if (!locked) HandleJump();
 
@@ -214,6 +244,13 @@ public class PepperController : MonoBehaviour
     private void FixedUpdate()
     {
         if (IsDashing) return;
+
+        // The hang holds the body still. Movement and gravity would both pull it off.
+        if (IsLedgeHanging)
+        {
+            rb.linearVelocity = Vector2.zero;
+            return;
+        }
 
         // Let a knockback carry. Driving movement through it would cancel the impulse on
         // the next physics step and taking a hit would not read at all.
@@ -297,7 +334,80 @@ public class PepperController : MonoBehaviour
         // the Pepper sticks to every surface it so much as brushes past in mid-air.
         bool holdingIntoWall = Mathf.Abs(horizontalInput) > 0.01f && (horizontalInput > 0f) == isFacingRight;
 
-        IsWallSliding = IsTouchingWall && !IsGrounded && rb.linearVelocity.y < 0f && holdingIntoWall;
+        // A ledge is wall at hand height with nothing directly above it. The two probes are
+        // stacked bands rather than the whole-body wallCheck, so the lip always ends up at
+        // the hands - reusing wallCheck would catch a ledge level with the knees.
+        // Only while falling and holding into it, so brushing a wall on the way up does not
+        // stick, and only once the release lock is up, or letting go would re-catch it.
+        if (!IsLedgeHanging
+            && IsTouchingWall
+            && !IsGrounded
+            && holdingIntoWall
+            && rb.linearVelocity.y <= 0f
+            && Time.time >= ledgeLockUntil
+            && ledgeCheck != null
+            && !Physics2D.OverlapBox(ledgeCheck.position, ledgeCheckSize, 0f, wallLayer)
+            && Physics2D.OverlapBox(HandProbePosition, ledgeCheckSize, 0f, wallLayer))
+        {
+            BeginLedgeHang();
+        }
+
+        IsWallSliding = IsTouchingWall && !IsGrounded && rb.linearVelocity.y < 0f
+                        && holdingIntoWall && !IsLedgeHanging;
+    }
+
+    /// <summary>The band directly below the clear probe: where the lip has to be.</summary>
+    private Vector2 HandProbePosition =>
+        (Vector2)ledgeCheck.position + Vector2.down * ledgeCheckSize.y;
+
+    private void BeginLedgeHang()
+    {
+        IsLedgeHanging = true;
+
+        rb.linearVelocity = Vector2.zero;
+        rb.gravityScale = 0f;
+
+        // A ledge is footing. It gives back the dash the same way the ground does, or a
+        // long climb would run the Pepper out of options halfway up.
+        canDash = true;
+        jumpBufferCounter = 0f;
+
+        OnLedgeGrabbed?.Invoke();
+    }
+
+    private void ReleaseLedge()
+    {
+        IsLedgeHanging = false;
+        rb.gravityScale = defaultGravityScale;
+        ledgeLockUntil = Time.time + ledgeReleaseLock;
+    }
+
+    /// <summary>Hanging: the only inputs that mean anything are up and over, or let go.</summary>
+    private void HandleLedgeHang()
+    {
+        rb.linearVelocity = Vector2.zero;
+
+        bool pullingAway = Mathf.Abs(horizontalInput) > 0.01f && (horizontalInput > 0f) != isFacingRight;
+
+        if (Input.GetAxisRaw("Vertical") < -0.5f || pullingAway)
+        {
+            ReleaseLedge();
+            return;
+        }
+
+        if (!Input.GetButtonDown("Jump")) return;
+
+        ReleaseLedge();
+
+        rb.linearVelocity = new Vector2((isFacingRight ? 1f : -1f) * ledgeClimbForce.x, ledgeClimbForce.y);
+
+        // The same press was buffered by HandleInput a few lines ago. Left alone it would
+        // spend itself again as a ground jump the moment the Pepper lands.
+        jumpBufferCounter = 0f;
+        coyoteTimeCounter = 0f;
+
+        OnLedgeClimbed?.Invoke();
+        OnJumped?.Invoke();
     }
 
     private void HandleMovement()
@@ -471,6 +581,16 @@ public class PepperController : MonoBehaviour
         {
             Gizmos.color = Color.cyan;
             Gizmos.DrawWireCube(wallCheck.position, wallCheckSize);
+        }
+
+        if (ledgeCheck != null)
+        {
+            // Magenta must be clear and yellow must be solid for a ledge to be caught.
+            // The pair has to straddle the lip, so place the marker just above the head.
+            Gizmos.color = Color.magenta;
+            Gizmos.DrawWireCube(ledgeCheck.position, ledgeCheckSize);
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawWireCube(HandProbePosition, ledgeCheckSize);
         }
     }
 }
