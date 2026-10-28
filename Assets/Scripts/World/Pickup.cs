@@ -54,8 +54,10 @@ public class Pickup : MonoBehaviour
         if (trigger == null) Debug.LogError($"[Pickup] trigger is not assigned on '{name}'.", this);
         else if (!trigger.isTrigger) Debug.LogWarning($"[Pickup] the collider on '{name}' is not set as a trigger; it will block the player instead of being picked up.", this);
 
-        // Offset the bob per instance, or a row of pickups pulses in unison like a metronome
-        bobPhase = Random.Range(0f, Mathf.PI * 2f);
+        // Qualified: this file also uses System, where Random is a different type entirely
+        // and the bare name will not compile.
+        // Offset the bob per instance, or a row of pickups pulses in unison like a metronome.
+        bobPhase = UnityEngine.Random.Range(0f, Mathf.PI * 2f);
     }
 
     private void Start()
