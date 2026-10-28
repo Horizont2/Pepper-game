@@ -75,7 +75,7 @@ public class AudioManager : MonoBehaviour
         if (playerController != null)
         {
             playerController.OnJumped += PlayJump;
-            playerController.OnLanded += PlayLand;
+            playerController.OnLanded += HandleLanded;
             playerController.OnDashed += PlayDash;
             playerController.OnWallJumped += PlayWallJump;
         }
@@ -107,7 +107,7 @@ public class AudioManager : MonoBehaviour
         if (playerController != null)
         {
             playerController.OnJumped -= PlayJump;
-            playerController.OnLanded -= PlayLand;
+            playerController.OnLanded -= HandleLanded;
             playerController.OnDashed -= PlayDash;
             playerController.OnWallJumped -= PlayWallJump;
         }
@@ -143,6 +143,7 @@ public class AudioManager : MonoBehaviour
 
     public void PlayJump() => Play(jump);
     public void PlayLand() => Play(land);
+    private void HandleLanded(float fallSpeed) => PlayLand();
     public void PlayDash() => Play(dash);
     public void PlayWallJump() => Play(wallJump);
     public void PlayFootstep() => Play(footstep);

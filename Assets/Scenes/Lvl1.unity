@@ -836,6 +836,10 @@ PrefabInstance:
       propertyPath: respawnPoint
       value:
       objectReference: {fileID: 1950000002}
+    - target: {fileID: 8820000000000000020, guid: a61a727c02c595847bb0781489a64915, type: 3}
+      propertyPath: gameFeel
+      value:
+      objectReference: {fileID: 519420033}
     - target: {fileID: 2370418495893030951, guid: a61a727c02c595847bb0781489a64915, type: 3}
       propertyPath: gameFeel
       value:

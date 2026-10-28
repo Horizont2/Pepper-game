@@ -109,8 +109,9 @@ public class PepperController : MonoBehaviour
     /// <summary>A dash started.</summary>
     public event System.Action OnDashed;
 
-    /// <summary>Touched down after being airborne.</summary>
-    public event System.Action OnLanded;
+    /// <summary>Touched down after being airborne. Carries the downward speed on impact,
+    /// so a gentle step off a kerb and a long drop can be told apart.</summary>
+    public event System.Action<float> OnLanded;
 
     /// <summary>0 while the dash has just been spent, 1 when it is ready again. Drives the HUD slot.</summary>
     public float DashCooldownProgress
@@ -282,11 +283,12 @@ public class PepperController : MonoBehaviour
     private void CheckEnvironment()
     {
         bool wasGrounded = IsGrounded;
+        float fallSpeed = Mathf.Max(0f, -rb.linearVelocity.y);
 
         IsGrounded = Physics2D.OverlapBox(groundCheck.position, groundCheckSize, 0f, groundLayer);
 
         // Edge-triggered, so landing fires once rather than every frame on the floor
-        if (IsGrounded && !wasGrounded) OnLanded?.Invoke();
+        if (IsGrounded && !wasGrounded) OnLanded?.Invoke(fallSpeed);
 
         IsTouchingWall = wallCheck != null &&
                          Physics2D.OverlapBox(wallCheck.position, wallCheckSize, 0f, wallLayer);
