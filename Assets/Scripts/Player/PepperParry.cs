@@ -152,7 +152,11 @@ public class PepperParry : MonoBehaviour
         caughtSomething = true;
 
         // A parry lands harder than a normal hit - that contrast is the whole point
-        if (gameFeel != null) gameFeel.TriggerHitImpact(hitStopDuration, shakeDuration, shakeMagnitude);
+        if (gameFeel != null)
+        {
+            Vector2 towardAttacker = sourcePosition - (Vector2)transform.position;
+            gameFeel.TriggerHitImpact(hitStopDuration, shakeDuration, shakeMagnitude, towardAttacker);
+        }
 
         if (parryEffect != null)
         {

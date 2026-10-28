@@ -279,6 +279,9 @@ MonoBehaviour:
   jumpCooldown: 0.5
   coyoteTime: 0.15
   jumpBufferTime: 0.1
+  apexThreshold: 2
+  apexGravity: 0.55
+  turnAroundBoost: 2.2
   groundCheck: {fileID: 4294846154624479348}
   groundCheckSize: {x: 0.5, y: 0.1}
   groundLayer:
@@ -317,9 +320,12 @@ MonoBehaviour:
   attackRange: 0.6
   attackDuration: 0.4
   attackWindup: 0.12
+  attackBufferTime: 0.14
   hitStopDuration: 0.05
   shakeDuration: 0.1
   shakeMagnitude: 0.15
+  killHitStopMultiplier: 2.5
+  killShakeMultiplier: 1.6
   attackPoint: {fileID: 5431404032627540855}
   parry: {fileID: 2370418495893030951}
   gameFeel: {fileID: 0}

@@ -18,11 +18,20 @@ public class CameraShake : MonoBehaviour
     private float elapsed;
     private bool isShaking;
 
+    private Vector2 bias;
     private Vector3 lastAppliedOffset;
     private Vector3 lastWrittenPosition;
 
     /// <summary>Start a shake. A weaker hit will not cut a stronger one short.</summary>
-    public void Shake(float shakeDuration, float shakeMagnitude)
+    public void Shake(float shakeDuration, float shakeMagnitude) =>
+        Shake(shakeDuration, shakeMagnitude, Vector2.zero);
+
+    /// <summary>
+    /// As above, but biased along a direction. A shake that leans the way the blow went
+    /// reads as an impact; an evenly random one reads as noise.
+    /// Pass <see cref="Vector2.zero"/> for the undirected version.
+    /// </summary>
+    public void Shake(float shakeDuration, float shakeMagnitude, Vector2 direction)
     {
         if (shakeDuration <= 0f || shakeMagnitude <= 0f) return;
 
@@ -32,6 +41,7 @@ public class CameraShake : MonoBehaviour
         magnitude = shakeMagnitude;
         elapsed = 0f;
         isShaking = true;
+        bias = direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector2.zero;
     }
 
     private float CurrentStrength()
@@ -69,10 +79,22 @@ public class CameraShake : MonoBehaviour
         }
 
         float strength = CurrentStrength();
-        Vector3 offset = new Vector3(
-            Random.Range(-1f, 1f) * strength,
-            Random.Range(-1f, 1f) * strength,
-            0f);
+        Vector3 offset;
+
+        if (bias == Vector2.zero)
+        {
+            offset = new Vector3(Random.Range(-1f, 1f) * strength, Random.Range(-1f, 1f) * strength, 0f);
+        }
+        else
+        {
+            // Mostly along the blow, with a little scatter across it so it is a shake
+            // rather than a straight line
+            Vector2 across = new Vector2(-bias.y, bias.x);
+            Vector2 shaken = bias * (Random.Range(-1f, 1f) * strength)
+                           + across * (Random.Range(-1f, 1f) * strength * 0.35f);
+
+            offset = new Vector3(shaken.x, shaken.y, 0f);
+        }
 
         transform.position += offset;
 

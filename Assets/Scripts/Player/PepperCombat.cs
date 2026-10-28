@@ -30,10 +30,17 @@ public class PepperCombat : MonoBehaviour
     [Tooltip("Delay before the hitbox opens, so the swing lands mid-animation instead of on the button press.")]
     [SerializeField] private float attackWindup = 0.12f;
 
+    [Tooltip("An attack press is remembered this long, so one made during a swing or a cooldown still lands.")]
+    [SerializeField] private float attackBufferTime = 0.14f;
+
     [Header("Game Feel Settings")]
     [SerializeField] private float hitStopDuration = 0.05f;
     [SerializeField] private float shakeDuration = 0.1f;
     [SerializeField] private float shakeMagnitude = 0.15f;
+    [Tooltip("A killing blow hits harder than a glancing one. Multiplies the freeze.")]
+    [SerializeField] private float killHitStopMultiplier = 2.5f;
+    [Tooltip("And the shake, so the last hit of a fight reads as the last hit.")]
+    [SerializeField] private float killShakeMultiplier = 1.6f;
 
     /// <summary>True for the whole swing. Read by PepperController and PepperAnimator.</summary>
     public bool IsAttacking { get; private set; }
@@ -45,6 +52,8 @@ public class PepperCombat : MonoBehaviour
     public event System.Action OnAttackHit;
 
     private float nextAttackTime;
+    private float attackBufferCounter;
+    private bool lastSwingKilled;
 
     private void Awake()
     {
@@ -61,15 +70,21 @@ public class PepperCombat : MonoBehaviour
 
     private void Update()
     {
-        // Already committed to a swing or a parry - ignore new attack input.
+        // Remember the press even when it arrives mid-swing or mid-cooldown. Silently
+        // dropping input the player clearly gave is the most common source of a combat
+        // system feeling unresponsive.
+        if (Input.GetButtonDown("Fire1")) attackBufferCounter = attackBufferTime;
+        else attackBufferCounter -= Time.deltaTime;
+
+        // Already committed to a swing or a parry - both are commitments.
         // Without the parry check both run at once and the Pepper attacks while blocking.
         if (IsAttacking) return;
         if (parry != null && parry.IsBusy) return;
 
-        if (Time.time >= nextAttackTime && Input.GetButtonDown("Fire1"))
-        {
-            StartCoroutine(AttackRoutine());
-        }
+        if (attackBufferCounter <= 0f || Time.time < nextAttackTime) return;
+
+        attackBufferCounter = 0f;
+        StartCoroutine(AttackRoutine());
     }
 
     /// <summary>Abandon a swing in progress. Called on death so IsAttacking cannot stay stuck on.</summary>
@@ -84,6 +99,7 @@ public class PepperCombat : MonoBehaviour
     {
         // 1. Open the attack (this locks movement via PepperController)
         IsAttacking = true;
+        lastSwingKilled = false;
         OnAttackStarted?.Invoke();
 
         // 2. Wind up, so the hit connects partway through the swing
@@ -98,7 +114,16 @@ public class PepperCombat : MonoBehaviour
         {
             OnAttackHit?.Invoke();
 
-            if (gameFeel != null) gameFeel.TriggerHitImpact(hitStopDuration, shakeDuration, shakeMagnitude);
+            // The blow that finishes something lands harder than the three before it
+            float stop = hitStopDuration * (lastSwingKilled ? killHitStopMultiplier : 1f);
+            float shake = shakeMagnitude * (lastSwingKilled ? killShakeMultiplier : 1f);
+
+            // Lean the shake along the swing rather than scattering it
+            Vector2 swing = attackPoint != null
+                ? (Vector2)(attackPoint.position - transform.position)
+                : Vector2.zero;
+
+            if (gameFeel != null) gameFeel.TriggerHitImpact(stop, shakeDuration, shake, swing);
 
             if (hitEffect != null)
             {
@@ -131,6 +156,8 @@ public class PepperCombat : MonoBehaviour
 
             health.TakeDamage(attackDamage, transform.position);
             hitSuccessful = true;
+
+            if (!health.IsAlive) lastSwingKilled = true;
         }
 
         return hitSuccessful;

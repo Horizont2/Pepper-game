@@ -83,8 +83,12 @@ public class HitFeedback : MonoBehaviour
 
     private void HandleDamaged(Vector2 sourcePosition)
     {
-        // Taking a hit should be as loud as landing one
-        if (gameFeel != null) gameFeel.TriggerHitImpact(hitStopDuration, shakeDuration, shakeMagnitude);
+        // Taking a hit should be as loud as landing one, and shoved the way it threw us
+        if (gameFeel != null)
+        {
+            Vector2 away = (Vector2)transform.position - sourcePosition;
+            gameFeel.TriggerHitImpact(hitStopDuration, shakeDuration, shakeMagnitude, away);
+        }
 
         if (spriteRenderer != null && !isStaggered)
         {

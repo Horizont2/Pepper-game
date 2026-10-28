@@ -35,11 +35,15 @@ public class GameFeelManager : MonoBehaviour
     }
 
     /// <summary>Call this when a hit connects.</summary>
-    public void TriggerHitImpact(float stopDuration = 0.05f, float shakeDuration = 0.1f, float shakeMagnitude = 0.15f)
+    public void TriggerHitImpact(float stopDuration = 0.05f, float shakeDuration = 0.1f, float shakeMagnitude = 0.15f) =>
+        TriggerHitImpact(stopDuration, shakeDuration, shakeMagnitude, Vector2.zero);
+
+    /// <summary>As above, with the shake leaning the way the blow went.</summary>
+    public void TriggerHitImpact(float stopDuration, float shakeDuration, float shakeMagnitude, Vector2 direction)
     {
         if (stopDuration > 0f) StartCoroutine(HitStopRoutine(stopDuration));
 
-        if (cameraShake != null) cameraShake.Shake(shakeDuration, shakeMagnitude);
+        if (cameraShake != null) cameraShake.Shake(shakeDuration, shakeMagnitude, direction);
     }
 
     private IEnumerator HitStopRoutine(float duration)

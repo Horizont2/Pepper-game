@@ -38,6 +38,13 @@ public class PepperController : MonoBehaviour
     [SerializeField] private float coyoteTime = 0.15f;
     [Tooltip("How long an early jump press is remembered before landing.")]
     [SerializeField] private float jumpBufferTime = 0.1f;
+    [Tooltip("Vertical speed below which the jump counts as being at its peak.")]
+    [SerializeField] private float apexThreshold = 2f;
+    [Tooltip("Fraction of gravity that still applies at the peak. Lower means more hang time.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float apexGravity = 0.55f;
+    [Tooltip("Extra acceleration when reversing, so a turn is sharp instead of a slow slide.")]
+    [SerializeField] private float turnAroundBoost = 2.2f;
 
     [Header("Ground Detection")]
     [SerializeField] private Transform groundCheck;
@@ -301,6 +308,15 @@ public class PepperController : MonoBehaviour
         float speedDifference = targetSpeed - rb.linearVelocity.x;
         float accelRate = (Mathf.Abs(targetSpeed) > 0.01f) ? acceleration : deceleration;
 
+        // Changing direction has to fight the existing speed as well as build the new one,
+        // so without a boost a turn feels like wading. This is the difference between a
+        // character that pivots and one that slides.
+        bool isTurning = Mathf.Abs(targetSpeed) > 0.01f &&
+                         Mathf.Abs(rb.linearVelocity.x) > 0.01f &&
+                         Mathf.Sign(targetSpeed) != Mathf.Sign(rb.linearVelocity.x);
+
+        if (isTurning) accelRate *= turnAroundBoost;
+
         float movement = speedDifference * accelRate;
         rb.AddForce(movement * Vector2.right);
     }
@@ -364,6 +380,14 @@ public class PepperController : MonoBehaviour
     /// <summary>Fall faster than we rise, and cut the jump short when the button is released.</summary>
     private void ApplyBetterGravity()
     {
+        // Hold back part of gravity near the top of the arc. That moment of hang is where
+        // a player actually aims a jump, and it costs no height to give them.
+        if (!IsGrounded && Mathf.Abs(rb.linearVelocity.y) < apexThreshold)
+        {
+            float heldBack = -Physics2D.gravity.y * rb.gravityScale * (1f - apexGravity);
+            rb.linearVelocity += Vector2.up * heldBack * Time.fixedDeltaTime;
+        }
+
         if (rb.linearVelocity.y < 0)
         {
             rb.linearVelocity += Vector2.up * Physics2D.gravity.y * (fallMultiplier - 1) * Time.fixedDeltaTime;
@@ -402,7 +426,14 @@ public class PepperController : MonoBehaviour
         float originalGravity = rb.gravityScale;
         rb.gravityScale = 0f;
 
-        float dashDirection = isFacingRight ? 1f : -1f;
+        // Dash where the stick is pointing, falling back to the facing when it is neutral.
+        // Dashing backwards because the sprite had not turned yet feels like a bug.
+        float dashDirection = Mathf.Abs(horizontalInput) > 0.01f
+            ? Mathf.Sign(horizontalInput)
+            : (isFacingRight ? 1f : -1f);
+
+        if ((dashDirection > 0f) != isFacingRight) Flip();
+
         rb.linearVelocity = new Vector2(dashDirection * dashForce, 0f);
 
         if (dashTrail != null) dashTrail.emitting = true;
