@@ -59,6 +59,10 @@ public class ToasterAI : MonoBehaviour
     [Header("Combat Settings")]
     [SerializeField] private int attackDamage = 15;
     [SerializeField] private float attackCooldown = 1.5f;
+    [Tooltip("Random slack either side of the cooldown. Without it two enemies that spot " +
+             "the player together swing in lockstep for the rest of the fight, which lands " +
+             "as one unbroken stream of damage rather than two attackers.")]
+    [SerializeField] private float attackCooldownVariance = 0.35f;
     [Tooltip("Telegraph before the hit lands. Without it the swing is unreadable and unparryable.")]
     [SerializeField] private float attackWindup = 0.35f;
     [Tooltip("How long it stays committed after the swing - the opening to punish.")]
@@ -75,6 +79,10 @@ public class ToasterAI : MonoBehaviour
     [Tooltip("How long the lunge travels before the hit is resolved. It closes the last few " +
              "centimetres, so a swing committed at the edge of reach can still land.")]
     [SerializeField] private float lungeTravel = 0.08f;
+    [Tooltip("Step back after the swing. Without it the enemy parks inside its own reach " +
+             "and swings on every cooldown with no gap for the player to act in.")]
+    [SerializeField] private float backOffSpeed = 1.3f;
+    [SerializeField] private float backOffDuration = 0.22f;
 
     [Header("Alert")]
     [Tooltip("Beat of hesitation the first time the player is spotted. Switching straight from " +
@@ -310,7 +318,9 @@ public class ToasterAI : MonoBehaviour
     {
         if (Time.time < nextAttackTime) return;
 
-        nextAttackTime = Time.time + attackCooldown;
+        nextAttackTime = Time.time + attackCooldown
+                       + UnityEngine.Random.Range(-attackCooldownVariance, attackCooldownVariance);
+
         StartCoroutine(AttackRoutine());
     }
 
@@ -321,6 +331,13 @@ public class ToasterAI : MonoBehaviour
         Report("spotted the player");
         if (hitFeedback != null) hitFeedback.ShowTell(alertDuration);
         OnAlerted?.Invoke();
+
+        // Push the first swing out by a random beat. Two enemies that notice the player on
+        // the same frame would otherwise stay in phase and read as a single attacker
+        // hitting twice as hard.
+        nextAttackTime = Mathf.Max(
+            nextAttackTime,
+            Time.time + UnityEngine.Random.Range(0f, attackCooldownVariance * 2f));
 
         yield return new WaitForSeconds(alertDuration);
 
@@ -386,6 +403,11 @@ public class ToasterAI : MonoBehaviour
                 if (logDecisions) Debug.Log($"[ToasterAI] {name}: dealt {attackDamage} to '{playerHealth.name}', now {playerHealth.CurrentHealth}/{playerHealth.MaxHealth}", this);
             }
         }
+
+        // Give ground after swinging. The recovery is the window to punish, and it only
+        // means anything if the enemy is out of its own reach while it lasts.
+        if (backOffSpeed > 0f && CanAdvance(-toTarget))
+            Shove(-toTarget * backOffSpeed, backOffDuration);
 
         if (attackRecovery > 0f) yield return new WaitForSeconds(attackRecovery);
 

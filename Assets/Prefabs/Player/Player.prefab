@@ -334,8 +334,8 @@ MonoBehaviour:
   attackWindup: 0.12
   attackBufferTime: 0.14
   hitStopDuration: 0.05
-  shakeDuration: 0.1
-  shakeMagnitude: 0.15
+  shakeDuration: 0.14
+  shakeMagnitude: 0.085
   killHitStopMultiplier: 2.5
   killShakeMultiplier: 1.6
   attackPoint: {fileID: 5431404032627540855}
@@ -396,7 +396,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HealthComponent
   maxHealth: 100
-  invulnerabilityDuration: 0.7
+  invulnerabilityDuration: 0.9
 --- !u!114 &6155688484261038520
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -453,14 +453,14 @@ MonoBehaviour:
     m_Bits: 128
   gameFeel: {fileID: 0}
   parryEffect: {fileID: 7700000000000000013}
-  parryWindow: 0.18
-  parryRecovery: 0.22
-  parryCooldown: 0.5
+  parryWindow: 0.26
+  parryRecovery: 0.18
+  parryCooldown: 0.3
   staggerRadius: 0.7
   staggerDuration: 1.2
   hitStopDuration: 0.14
-  shakeDuration: 0.22
-  shakeMagnitude: 0.3
+  shakeDuration: 0.28
+  shakeMagnitude: 0.2
 --- !u!114 &2370418495893030952
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -478,8 +478,8 @@ MonoBehaviour:
   rb: {fileID: 6704684622186390054}
   gameFeel: {fileID: 0}
   hitStopDuration: 0.04
-  shakeDuration: 0.18
-  shakeMagnitude: 0.22
+  shakeDuration: 0.24
+  shakeMagnitude: 0.14
   flashColor: {r: 1, g: 0.33, b: 0.33, a: 1}
   flashDuration: 0.12
   knockbackForce: 2.5
@@ -563,7 +563,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -0.0755, y: -0.211, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.8, y: 0.8, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 3092881144596631807}
@@ -677,8 +677,8 @@ Transform:
   m_GameObject: {fileID: 8820000000000000009}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.0755, y: -0.19, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: -0.0755, y: -0.2, z: 0}
+  m_LocalScale: {x: 0.75, y: 0.75, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 3092881144596631807}
@@ -764,7 +764,7 @@ MonoBehaviour:
   loop: 0
   playOnEnable: 1
   hideWhenFinished: 1
-  flipX: 0
+  flipX: 1
 --- !u!1 &8820000000000000013
 GameObject:
   m_ObjectHideFlags: 0
@@ -792,8 +792,8 @@ Transform:
   m_GameObject: {fileID: 8820000000000000013}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.035, y: -0.08, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 0.035, y: -0.2, z: 0}
+  m_LocalScale: {x: 0.8, y: 0.8, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 3092881144596631807}
@@ -900,12 +900,12 @@ MonoBehaviour:
   wallJumpEffect: {fileID: 8820000000000000016}
   wallSlideEffect: {fileID: 8840000000000000004}
   runEffect: {fileID: 8840000000000000008}
-  runDustInterval: 0.26
+  runDustInterval: 0.32
   runDustMinSpeed: 1.8
   dustFallSpeed: 3.5
   heavyFallSpeed: 7
   landShakeDuration: 0.12
-  landShakeMagnitude: 0.06
+  landShakeMagnitude: 0.055
 --- !u!1 &8830000000000000001
 GameObject:
   m_ObjectHideFlags: 0
@@ -1047,8 +1047,8 @@ Transform:
   m_GameObject: {fileID: 8840000000000000001}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.035, y: -0.12, z: 0}
-  m_LocalScale: {x: 0.75, y: 0.75, z: 1}
+  m_LocalPosition: {x: 0.035, y: -0.205, z: 0}
+  m_LocalScale: {x: 0.45, y: 0.45, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 3092881144596631807}
@@ -1130,7 +1130,7 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 1ff50ad7038c4883b8b4e0e7497e5aff, type: 3}
   - {fileID: 21300000, guid: abc13ba105964aca9170f6781be0785d, type: 3}
   - {fileID: 21300000, guid: e335347054b24b53bae9f8f9bd761553, type: 3}
-  framesPerSecond: 18
+  framesPerSecond: 13
   loop: 1
   playOnEnable: 1
   hideWhenFinished: 0

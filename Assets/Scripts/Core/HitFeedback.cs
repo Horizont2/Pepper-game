@@ -37,9 +37,12 @@ public class HitFeedback : MonoBehaviour
     [SerializeField] private float knockbackDuration = 0.18f;
 
     [Header("Tell")]
-    [Tooltip("Held while this character is winding up, or the moment it spots the player. " +
+    [Tooltip("Flashed while this character is winding up, or the moment it spots the player. " +
              "A swing with no visible tell can only be parried from memory.")]
-    [SerializeField] private Color tellColor = new Color(1f, 0.58f, 0.45f, 1f);
+    [SerializeField] private Color tellColor = new Color(1f, 0.74f, 0.16f, 1f);
+    [Tooltip("Blinks per second during the wind-up. A flat tint sits too close to the art " +
+             "to be noticed in a fight; a pulse is what the eye actually catches.")]
+    [SerializeField] private float tellPulsesPerSecond = 4.5f;
 
     [Header("Stagger (parry reward)")]
     [Tooltip("Tint held for the whole stagger, so an open enemy is readable at a glance.")]
@@ -101,13 +104,26 @@ public class HitFeedback : MonoBehaviour
 
     private IEnumerator TellRoutine(float duration)
     {
-        Color before = spriteRenderer.color;
-        spriteRenderer.color = tellColor;
+        float elapsed = 0f;
 
-        yield return new WaitForSeconds(duration);
+        while (elapsed < duration)
+        {
+            // A hit flash is the more urgent read and a stagger owns the sprite outright,
+            // so the pulse stands aside for both instead of overwriting them every frame.
+            // Lerping from originalColor rather than the live colour matters here: the tell
+            // runs long enough that whatever happened to be on the sprite when it started
+            // is not the colour to come back to.
+            if (flashRoutine == null && !isStaggered)
+            {
+                float t = Mathf.PingPong(elapsed * tellPulsesPerSecond * 2f, 1f);
+                spriteRenderer.color = Color.Lerp(originalColor, tellColor, t);
+            }
 
-        // A hit or a stagger landing mid-tell owns the colour now - do not stomp it
-        if (!isStaggered && spriteRenderer.color == tellColor) spriteRenderer.color = before;
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (flashRoutine == null && !isStaggered) spriteRenderer.color = originalColor;
 
         tellRoutine = null;
     }

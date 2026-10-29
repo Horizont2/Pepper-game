@@ -31,7 +31,7 @@ public class PlayerMovementFx : MonoBehaviour
 
     [Header("Running")]
     [Tooltip("Seconds between running puffs. Too short and it is a smoke trail.")]
-    [SerializeField] private float runDustInterval = 0.26f;
+    [SerializeField] private float runDustInterval = 0.32f;
     [Tooltip("Below this speed, walking leaves no dust.")]
     [SerializeField] private float runDustMinSpeed = 1.8f;
 
@@ -134,14 +134,12 @@ public class PlayerMovementFx : MonoBehaviour
 
     private void PlayWallJump() => Fire(wallJumpEffect);
 
-    private void PlayDash()
-    {
-        // Trails behind the dash rather than leading it
-        if (dashEffect == null) return;
-
-        dashEffect.gameObject.SetActive(true);
-        dashEffect.Play(controller.IsFacingRight ? -1f : 1f);
-    }
+    // The effects are children of the Pepper, and the Pepper turns by mirroring its own
+    // transform, so every child is already mirrored with the facing. Flipping the sprite
+    // on top of that cancelled out going right and double-flipped going left, which
+    // pointed the dash puff forwards instead of trailing behind. Placement alone is
+    // enough: the object sits behind the feet and the mirror carries it to the other side.
+    private void PlayDash() => Fire(dashEffect);
 
     private static void Fire(SpriteSheetEffect effect)
     {

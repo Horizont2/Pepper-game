@@ -219,7 +219,8 @@ MonoBehaviour:
   knockbackForce: 1.1
   knockbackLift: 1.2
   knockbackDuration: 0.13
-  tellColor: {r: 1, g: 0.58, b: 0.45, a: 1}
+  tellColor: {r: 1, g: 0.74, b: 0.16, a: 1}
+  tellPulsesPerSecond: 4.5
   staggerColor: {r: 1, g: 0.85, b: 0.4, a: 1}
 --- !u!114 &5011000000000000210
 MonoBehaviour:
@@ -280,13 +281,16 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 256
   attackDamage: 20
-  attackCooldown: 1
-  attackWindup: 0.35
-  attackRecovery: 0.25
+  attackCooldown: 1.85
+  attackCooldownVariance: 0.35
+  attackWindup: 0.45
+  attackRecovery: 0.45
   attackAnimName: 
   coilSpeed: 0.65
   lungeSpeed: 2.6
   lungeTravel: 0.08
+  backOffSpeed: 1.1
+  backOffDuration: 0.22
   alertDuration: 0.25
 --- !u!1 &5011000000000000211
 GameObject:

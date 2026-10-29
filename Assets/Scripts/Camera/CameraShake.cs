@@ -10,9 +10,12 @@ using UnityEngine;
 [DefaultExecutionOrder(1000)]
 public class CameraShake : MonoBehaviour
 {
+    [Tooltip("How fast the shake wobbles, in cycles per second. Low lurches, high buzzes.")]
+    [SerializeField] private float frequency = 16f;
     [Tooltip("Shake fades out across its duration instead of cutting off abruptly.")]
     [SerializeField] private AnimationCurve falloff = AnimationCurve.EaseInOut(0f, 1f, 1f, 0f);
 
+    private float seed;
     private float duration;
     private float magnitude;
     private float elapsed;
@@ -42,6 +45,9 @@ public class CameraShake : MonoBehaviour
         elapsed = 0f;
         isShaking = true;
         bias = direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector2.zero;
+
+        // A fresh slice of noise, so two hits in a row do not trace the same path
+        seed = UnityEngine.Random.Range(0f, 1000f);
     }
 
     private float CurrentStrength()
@@ -79,19 +85,29 @@ public class CameraShake : MonoBehaviour
         }
 
         float strength = CurrentStrength();
+
+        // Smooth noise sampled along time, not a fresh random number every frame. A new
+        // random each frame is white noise: it throws the camera the full magnitude in a
+        // new direction every single frame, which reads as a buzz rather than an impact,
+        // and gets harsher the higher the frame rate because there are more jumps per
+        // second. Perlin moves continuously and looks the same at any frame rate.
+        float t = elapsed * frequency;
+        float wobbleX = Mathf.PerlinNoise(seed, t) * 2f - 1f;
+        float wobbleY = Mathf.PerlinNoise(seed + 37.3f, t) * 2f - 1f;
+
         Vector3 offset;
 
         if (bias == Vector2.zero)
         {
-            offset = new Vector3(Random.Range(-1f, 1f) * strength, Random.Range(-1f, 1f) * strength, 0f);
+            offset = new Vector3(wobbleX * strength, wobbleY * strength, 0f);
         }
         else
         {
             // Mostly along the blow, with a little scatter across it so it is a shake
             // rather than a straight line
             Vector2 across = new Vector2(-bias.y, bias.x);
-            Vector2 shaken = bias * (Random.Range(-1f, 1f) * strength)
-                           + across * (Random.Range(-1f, 1f) * strength * 0.35f);
+            Vector2 shaken = bias * (wobbleX * strength)
+                           + across * (wobbleY * strength * 0.35f);
 
             offset = new Vector3(shaken.x, shaken.y, 0f);
         }
