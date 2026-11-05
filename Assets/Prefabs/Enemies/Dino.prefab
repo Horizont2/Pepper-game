@@ -220,7 +220,8 @@ MonoBehaviour:
   knockbackLift: 1.2
   knockbackDuration: 0.13
   tellColor: {r: 1, g: 0.74, b: 0.16, a: 1}
-  tellPulsesPerSecond: 4.5
+  tellPulsesPerSecond: 3.5
+  tellPulseRampUp: 2.6
   staggerColor: {r: 1, g: 0.85, b: 0.4, a: 1}
 --- !u!114 &5011000000000000410
 MonoBehaviour:
@@ -273,7 +274,14 @@ MonoBehaviour:
   patrolSpeed: 0.7
   chaseSpeed: 1.7
   patrolPointReachedDistance: 0.12
+  patrolPauseDuration: 0.6
+  crowdLayer:
+    serializedVersion: 2
+    m_Bits: 128
+  crowdSpacing: 0.22
   detectionRange: 2.6
+  detectionHeight: 1
+  requireLineOfSight: 1
   stopDistance: 0.41
   attackRange: 0.71
   attackCommitFraction: 0.8

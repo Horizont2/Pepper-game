@@ -183,11 +183,11 @@ MonoBehaviour:
       Offset: {x: 0, y: 0}
   CenterOnActivate: 1
   TargetOffset: {x: 0, y: 0, z: 0}
-  Damping: {x: 0.35, y: 0.7, z: 0}
+  Damping: {x: 0.3, y: 0.6, z: 0}
   Lookahead:
     Enabled: 1
-    Time: 0.25
-    Smoothing: 5
+    Time: 0.14
+    Smoothing: 8
     IgnoreY: 1
 --- !u!114 &409772380
 MonoBehaviour:
@@ -264,6 +264,7 @@ GameObject:
   - component: {fileID: 519420035}
   - component: {fileID: 519420036}
   - component: {fileID: 519420037}
+  - component: {fileID: 519420038}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -1344,10 +1345,11 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::ParallaxLayer
   cameraTransform: {fileID: 519420032}
-  parallaxFactor: 0.25
-  affectY: 0
+  parallaxFactor: 0.18
+  verticalFactor: 0.6
+  autoScrollSpeed: 0.0
   infiniteScroll: 0
-  tileWidth: 0
+  tileWidth: 0.0
   spriteRenderer: {fileID: 1322809556}
 --- !u!1 &1900000001
 GameObject:
@@ -1434,10 +1436,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ParallaxLayer
   cameraTransform: {fileID: 519420032}
-  parallaxFactor: 0.6
-  affectY: 0
-  infiniteScroll: 0
-  tileWidth: 0
+  parallaxFactor: 0.35
+  verticalFactor: 0.7
+  autoScrollSpeed: 0.0
+  infiniteScroll: 1
+  tileWidth: 9.216
   spriteRenderer: {fileID: 0}
 --- !u!1 &1900000006
 GameObject:
@@ -1757,10 +1760,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ParallaxLayer
   cameraTransform: {fileID: 519420032}
-  parallaxFactor: 0.45
-  affectY: 0
-  infiniteScroll: 0
-  tileWidth: 0
+  parallaxFactor: 0.5
+  verticalFactor: 0.78
+  autoScrollSpeed: 0.0
+  infiniteScroll: 1
+  tileWidth: 9.216
   spriteRenderer: {fileID: 0}
 --- !u!1 &1900000018
 GameObject:
@@ -2080,10 +2084,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ParallaxLayer
   cameraTransform: {fileID: 519420032}
-  parallaxFactor: 0.32
-  affectY: 0
-  infiniteScroll: 0
-  tileWidth: 0
+  parallaxFactor: 0.62
+  verticalFactor: 0.85
+  autoScrollSpeed: 0.0
+  infiniteScroll: 1
+  tileWidth: 9.216
   spriteRenderer: {fileID: 0}
 --- !u!1 &1900000030
 GameObject:
@@ -2403,10 +2408,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ParallaxLayer
   cameraTransform: {fileID: 519420032}
-  parallaxFactor: 0.2
-  affectY: 0
-  infiniteScroll: 0
-  tileWidth: 0
+  parallaxFactor: 0.74
+  verticalFactor: 0.9
+  autoScrollSpeed: -0.055
+  infiniteScroll: 1
+  tileWidth: 9.216
   spriteRenderer: {fileID: 0}
 --- !u!1 &1900000042
 GameObject:
@@ -2726,10 +2732,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ParallaxLayer
   cameraTransform: {fileID: 519420032}
-  parallaxFactor: 0.12
-  affectY: 0
-  infiniteScroll: 0
-  tileWidth: 0
+  parallaxFactor: 0.84
+  verticalFactor: 0.94
+  autoScrollSpeed: 0.0
+  infiniteScroll: 1
+  tileWidth: 9.216
   spriteRenderer: {fileID: 0}
 --- !u!1 &1900000054
 GameObject:
@@ -3049,10 +3056,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ParallaxLayer
   cameraTransform: {fileID: 519420032}
-  parallaxFactor: 0.04
-  affectY: 0
-  infiniteScroll: 0
-  tileWidth: 0
+  parallaxFactor: 0.93
+  verticalFactor: 1.0
+  autoScrollSpeed: 0.0
+  infiniteScroll: 1
+  tileWidth: 9.216
   spriteRenderer: {fileID: 0}
 --- !u!1 &1900000066
 GameObject:
@@ -4087,6 +4095,30 @@ MonoBehaviour:
   m_FillOrigin: 2
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &519420038
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 519420028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b3e9c17a04d2423d9f1a85c6e2470bd8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraDynamics
+  composer: {fileID: 409772379}
+  controller: {fileID: 1960000012}
+  playerBody: {fileID: 1960000017}
+  restingDamping: {x: 0.3, y: 0.6}
+  chasingDamping: {x: 0.13, y: 0.4}
+  chaseAtSpeed: 5
+  blendSpeed: 4
+--- !u!50 &1960000017 stripped
+Rigidbody2D:
+  m_CorrespondingSourceObject: {fileID: 6704684622186390054, guid: a61a727c02c595847bb0781489a64915, type: 3}
+  m_PrefabInstance: {fileID: 1308043381}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

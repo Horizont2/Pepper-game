@@ -31,6 +31,9 @@ public class PepperParry : MonoBehaviour
              "the player can see rather than guess at.")]
     [SerializeField] private SpriteRenderer spriteRenderer;
     [SerializeField] private Color windowColor = new Color(0.55f, 0.85f, 1f, 1f);
+    [Tooltip("Held through the recovery after a parry that caught nothing. A miss that looks " +
+             "exactly like never having pressed the button teaches the player nothing.")]
+    [SerializeField] private Color whiffColor = new Color(0.42f, 0.42f, 0.5f, 1f);
 
     [Header("Timing")]
     [Tooltip("How long incoming hits are cancelled. The forgiveness of the move.")]
@@ -39,6 +42,11 @@ public class PepperParry : MonoBehaviour
     [SerializeField] private float parryRecovery = 0.22f;
     [Tooltip("Before it can be used again. What stops it being a second dodge button.")]
     [SerializeField] private float parryCooldown = 0.5f;
+    [Tooltip("How long a press is remembered when the parry is not available yet - mid-swing, " +
+             "or still on cooldown. Dropping input the player clearly gave is what makes a " +
+             "defensive move feel like it does not work, and buffering costs no leniency on " +
+             "the timing itself: the window is still the window.")]
+    [SerializeField] private float parryBufferTime = 0.15f;
 
     [Header("On Success")]
     [SerializeField] private float staggerRadius = 0.7f;
@@ -77,6 +85,7 @@ public class PepperParry : MonoBehaviour
     private bool canParry = true;
     private bool caughtSomething;
     private float readyTime;
+    private float parryBufferCounter;
     private Color colorBeforeWindow;
 
     private void Awake()
@@ -104,15 +113,25 @@ public class PepperParry : MonoBehaviour
 
     private void Update()
     {
+        // Read the press first, before any of the reasons the parry might be unavailable.
+        // Otherwise a press that arrives one frame early is thrown away entirely.
+        if (Input.GetButtonDown("Fire2")) parryBufferCounter = parryBufferTime;
+        else parryBufferCounter -= Time.deltaTime;
+
         if (IsBusy || !canParry) return;
 
-        // No parrying out of a swing - the attack is a commitment, that is its cost
-        if (combat != null && combat.IsAttacking) return;
+        // No parrying out of the committed part of a swing - the wind-up and the hit frame
+        // are what the attack costs. The recovery tail afterwards is fair game.
+        if (combat != null && combat.IsCommitted) return;
 
-        if (Input.GetButtonDown("Fire2"))
-        {
-            StartCoroutine(ParryRoutine());
-        }
+        if (parryBufferCounter <= 0f) return;
+
+        parryBufferCounter = 0f;
+
+        // Cut a recovery short rather than queueing behind it
+        if (combat != null && combat.IsAttacking) combat.CancelAttack();
+
+        StartCoroutine(ParryRoutine());
     }
 
     /// <summary>Abandon a parry in progress. Called on death so the window cannot stay open.</summary>
@@ -124,6 +143,7 @@ public class PepperParry : MonoBehaviour
         IsBusy = false;
         canParry = true;
         readyTime = 0f;
+        parryBufferCounter = 0f;
     }
 
     private IEnumerator ParryRoutine()
@@ -139,11 +159,24 @@ public class PepperParry : MonoBehaviour
         yield return new WaitForSeconds(parryWindow);
 
         IsWindowOpen = false;
-        SetWindowTint(false);
 
-        if (!caughtSomething) OnParryWhiffed?.Invoke();
+        if (caughtSomething)
+        {
+            SetWindowTint(false);
+        }
+        else
+        {
+            OnParryWhiffed?.Invoke();
+
+            // Dull out for the recovery, so the cost of a mistimed parry is visible while
+            // it is being paid rather than only felt when the next hit lands
+            if (spriteRenderer != null) spriteRenderer.color = whiffColor;
+        }
 
         yield return new WaitForSeconds(parryRecovery);
+
+        // Covers both paths - restores whatever the sprite was before the window opened
+        SetWindowTint(false);
 
         IsBusy = false;
 

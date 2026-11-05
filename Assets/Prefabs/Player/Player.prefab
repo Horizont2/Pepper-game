@@ -285,6 +285,7 @@ MonoBehaviour:
   fallMultiplier: 2.5
   lowJumpMultiplier: 2
   jumpCooldown: 0.5
+  maxFallSpeed: 10
   coyoteTime: 0.15
   jumpBufferTime: 0.1
   apexThreshold: 2
@@ -447,6 +448,7 @@ MonoBehaviour:
   parryPoint: {fileID: 5431404032627540855}
   spriteRenderer: {fileID: 1102457643944670748}
   windowColor: {r: 0.55, g: 0.85, b: 1, a: 1}
+  whiffColor: {r: 0.42, g: 0.42, b: 0.5, a: 1}
   combat: {fileID: 3652982717926528586}
   enemyLayers:
     serializedVersion: 2
@@ -456,6 +458,7 @@ MonoBehaviour:
   parryWindow: 0.26
   parryRecovery: 0.18
   parryCooldown: 0.3
+  parryBufferTime: 0.15
   staggerRadius: 0.7
   staggerDuration: 1.2
   hitStopDuration: 0.14

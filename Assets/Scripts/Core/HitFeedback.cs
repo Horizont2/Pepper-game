@@ -40,9 +40,13 @@ public class HitFeedback : MonoBehaviour
     [Tooltip("Flashed while this character is winding up, or the moment it spots the player. " +
              "A swing with no visible tell can only be parried from memory.")]
     [SerializeField] private Color tellColor = new Color(1f, 0.74f, 0.16f, 1f);
-    [Tooltip("Blinks per second during the wind-up. A flat tint sits too close to the art " +
-             "to be noticed in a fight; a pulse is what the eye actually catches.")]
-    [SerializeField] private float tellPulsesPerSecond = 4.5f;
+    [Tooltip("Blinks per second at the start of the wind-up. A flat tint sits too close to " +
+             "the art to be noticed in a fight; a pulse is what the eye actually catches.")]
+    [SerializeField] private float tellPulsesPerSecond = 3.5f;
+    [Tooltip("How much faster the blink is by the end of the wind-up. This is what turns the " +
+             "tell from 'something is coming' into 'now' - the parry is pressed on the fastest " +
+             "beat, which is a thing the player can learn rather than guess.")]
+    [SerializeField] private float tellPulseRampUp = 2.6f;
 
     [Header("Stagger (parry reward)")]
     [Tooltip("Tint held for the whole stagger, so an open enemy is readable at a glance.")]
@@ -105,9 +109,17 @@ public class HitFeedback : MonoBehaviour
     private IEnumerator TellRoutine(float duration)
     {
         float elapsed = 0f;
+        float phase = 0f;
 
         while (elapsed < duration)
         {
+            // Accelerate toward the strike. The phase is integrated rather than derived
+            // from elapsed time, because changing the rate of a PingPong on elapsed time
+            // jumps the blink mid-cycle instead of speeding it up.
+            float progress = duration > 0f ? Mathf.Clamp01(elapsed / duration) : 1f;
+            phase += Mathf.Lerp(tellPulsesPerSecond, tellPulsesPerSecond * tellPulseRampUp, progress)
+                     * Time.deltaTime;
+
             // A hit flash is the more urgent read and a stagger owns the sprite outright,
             // so the pulse stands aside for both instead of overwriting them every frame.
             // Lerping from originalColor rather than the live colour matters here: the tell
@@ -115,8 +127,7 @@ public class HitFeedback : MonoBehaviour
             // is not the colour to come back to.
             if (flashRoutine == null && !isStaggered)
             {
-                float t = Mathf.PingPong(elapsed * tellPulsesPerSecond * 2f, 1f);
-                spriteRenderer.color = Color.Lerp(originalColor, tellColor, t);
+                spriteRenderer.color = Color.Lerp(originalColor, tellColor, Mathf.PingPong(phase * 2f, 1f));
             }
 
             elapsed += Time.deltaTime;

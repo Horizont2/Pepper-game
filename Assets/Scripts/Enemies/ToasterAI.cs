@@ -46,6 +46,14 @@ public class ToasterAI : MonoBehaviour
 
     [Header("Detection Settings")]
     [SerializeField] private float detectionRange = 2.5f;
+    [Tooltip("How far above or below itself this enemy will notice the player. Plain distance " +
+             "is round, so without this an enemy spots the player standing on a platform " +
+             "directly overhead and spends the whole fight walking into the wall underneath. " +
+             "0 removes the limit.")]
+    [SerializeField] private float detectionHeight = 1f;
+    [Tooltip("Ignore the player when there is solid ground in the way. Off, enemies notice " +
+             "the player through a floor or round a corner.")]
+    [SerializeField] private bool requireLineOfSight = true;
     [Tooltip("How close it walks before stopping to swing. Keep it outside the player's body so the two do not overlap.")]
     [SerializeField] private float stopDistance = 0.5f;
     [Tooltip("Reach of the swing. A little more than stopDistance, or the hit never connects.")]
@@ -84,6 +92,18 @@ public class ToasterAI : MonoBehaviour
     [SerializeField] private float backOffSpeed = 1.3f;
     [SerializeField] private float backOffDuration = 0.22f;
 
+    [Header("Patrol")]
+    [Tooltip("Beat of pause at each end of the route, and at a ledge it turns back from. " +
+             "A patrol that turns on a dime reads as a machine on rails.")]
+    [SerializeField] private float patrolPauseDuration = 0.6f;
+
+    [Header("Crowding")]
+    [Tooltip("Layers this enemy will not walk into - itself, normally. Two enemies chasing " +
+             "the same player otherwise end up standing in the same place.")]
+    [SerializeField] private LayerMask crowdLayer;
+    [Tooltip("How much room it keeps in front of another enemy.")]
+    [SerializeField] private float crowdSpacing = 0.22f;
+
     [Header("Alert")]
     [Tooltip("Beat of hesitation the first time the player is spotted. Switching straight from " +
              "patrolling to charging gives the player nothing to read.")]
@@ -105,6 +125,7 @@ public class ToasterAI : MonoBehaviour
     private int currentPatrolIndex;
     private float nextAttackTime;
     private float shoveUntil;
+    private float patrolHoldUntil;
     private bool isChasing;
     private bool isAlerting;
     private bool isAttacking;
@@ -157,12 +178,36 @@ public class ToasterAI : MonoBehaviour
 
     private void OnEnable()
     {
-        if (health != null) health.OnDied += HandleDeath;
+        if (health == null) return;
+
+        health.OnDied += HandleDeath;
+        health.OnDamaged += HandleDamaged;
     }
 
     private void OnDisable()
     {
-        if (health != null) health.OnDied -= HandleDeath;
+        if (health == null) return;
+
+        health.OnDied -= HandleDeath;
+        health.OnDamaged -= HandleDamaged;
+    }
+
+    /// <summary>
+    /// Turn on whoever just hit us, and treat it as having spotted them. Being shot in the
+    /// back and carrying on with the patrol route is the single thing that most makes an
+    /// enemy read as scenery, and it also removes the free kill on an unaware patroller.
+    /// </summary>
+    private void HandleDamaged(Vector2 sourcePosition)
+    {
+        FaceTowards(sourcePosition.x);
+
+        if (!isChasing)
+        {
+            isChasing = true;
+            StartCoroutine(AlertRoutine());
+        }
+
+        patrolHoldUntil = 0f;
     }
 
     private void Update()
@@ -194,7 +239,11 @@ public class ToasterAI : MonoBehaviour
 
         float distanceToPlayer = Vector2.Distance(transform.position, target.position);
 
-        if (distanceToPlayer <= detectionRange)
+        // Noticing the player takes height and line of sight into account; staying
+        // interested only takes distance. Requiring sight to hold the chase would make an
+        // enemy give up the instant the player stepped behind anything, and flicker in and
+        // out of the alert every time they stepped back out.
+        if (CanSee(target, distanceToPlayer))
         {
             // Only on the transition, not every frame it stays in range
             if (!isChasing) StartCoroutine(AlertRoutine());
@@ -237,6 +286,25 @@ public class ToasterAI : MonoBehaviour
         if (distanceToPlayer <= attackRange * attackCommitFraction) TryAttack();
     }
 
+    /// <summary>Close enough, roughly level with us, and not behind solid ground.</summary>
+    private bool CanSee(Transform target, float distance)
+    {
+        if (distance > detectionRange) return false;
+
+        if (detectionHeight > 0f
+            && Mathf.Abs(target.position.y - transform.position.y) > detectionHeight) return false;
+
+        if (!requireLineOfSight || bodyCollider == null || groundLayer.value == 0) return true;
+
+        // From the middle of the body rather than the pivot, which on this art sits at the
+        // feet and would graze the floor on any downhill sightline. Its own collider is on
+        // the enemy layer, so the ground mask cannot catch it on the way out.
+        Vector2 eye = bodyCollider.bounds.center;
+        Vector2 toTarget = (Vector2)target.position - eye;
+
+        return !Physics2D.Raycast(eye, toTarget.normalized, toTarget.magnitude, groundLayer);
+    }
+
     /// <summary>Logs a state only when it changes, so the console is readable.</summary>
     private void Report(string state)
     {
@@ -250,6 +318,13 @@ public class ToasterAI : MonoBehaviour
     {
         if (patrolPoints == null || patrolPoints.Length == 0) return;
 
+        // Holding at the end of the route, or at a ledge it just turned back from
+        if (Time.time < patrolHoldUntil)
+        {
+            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+            return;
+        }
+
         Transform targetPoint = patrolPoints[currentPatrolIndex];
         if (targetPoint == null) return;
 
@@ -261,7 +336,7 @@ public class ToasterAI : MonoBehaviour
         if (!CanAdvance(direction))
         {
             rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
-            currentPatrolIndex = (currentPatrolIndex + 1) % patrolPoints.Length;
+            NextPatrolPoint();
             return;
         }
 
@@ -272,8 +347,14 @@ public class ToasterAI : MonoBehaviour
         // count as reached and the enemy would grind against it forever.
         if (Mathf.Abs(dx) < patrolPointReachedDistance)
         {
-            currentPatrolIndex = (currentPatrolIndex + 1) % patrolPoints.Length;
+            NextPatrolPoint();
         }
+    }
+
+    private void NextPatrolPoint()
+    {
+        currentPatrolIndex = (currentPatrolIndex + 1) % patrolPoints.Length;
+        patrolHoldUntil = Time.time + patrolPauseDuration;
     }
 
     private void ChasePlayer()
@@ -310,6 +391,16 @@ public class ToasterAI : MonoBehaviour
         // Is something solid in the way at body height?
         Vector2 sideProbe = new Vector2(frontX, bounds.center.y);
         if (Physics2D.Raycast(sideProbe, new Vector2(direction, 0f), probeAhead + 0.04f, groundLayer)) return false;
+
+        // Is another enemy standing where we are about to be? Started clear of our own
+        // edge on purpose: this mask contains our own layer, queries start inside
+        // colliders by default, and a probe placed exactly on the edge would hit us and
+        // leave the enemy convinced it is permanently blocked by itself.
+        if (crowdLayer.value != 0 && crowdSpacing > 0f)
+        {
+            Vector2 crowdProbe = new Vector2(frontX + direction * 0.02f, bounds.center.y);
+            if (Physics2D.Raycast(crowdProbe, new Vector2(direction, 0f), crowdSpacing, crowdLayer)) return false;
+        }
 
         return true;
     }
@@ -459,6 +550,14 @@ public class ToasterAI : MonoBehaviour
     {
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, detectionRange);
+
+        // The height gate cuts the top and bottom off that sphere, so draw where it bites
+        if (detectionHeight > 0f)
+        {
+            Gizmos.color = new Color(1f, 1f, 0f, 0.35f);
+            Gizmos.DrawWireCube(transform.position, new Vector3(detectionRange * 2f, detectionHeight * 2f, 0f));
+        }
+
         Gizmos.color = new Color(1f, 0.6f, 0f);
         Gizmos.DrawWireSphere(transform.position, attackRange);
         // Where it actually commits, which is the one that decides whether it ever swings

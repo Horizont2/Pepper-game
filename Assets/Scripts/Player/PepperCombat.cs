@@ -48,6 +48,14 @@ public class PepperCombat : MonoBehaviour
     /// <summary>True for the whole swing. Read by PepperController and PepperAnimator.</summary>
     public bool IsAttacking { get; private set; }
 
+    /// <summary>
+    /// True only while the swing can still connect - the wind-up and the hit frame. The
+    /// tail after that is recovery, and a parry is allowed to cut it short: 0.28s of a
+    /// 0.4s swing where the parry simply does not respond is what makes it feel broken
+    /// rather than committed.
+    /// </summary>
+    public bool IsCommitted { get; private set; }
+
     /// <summary>A swing started, before anyone knows whether it lands.</summary>
     public event System.Action OnAttackStarted;
 
@@ -90,18 +98,23 @@ public class PepperCombat : MonoBehaviour
         StartCoroutine(AttackRoutine());
     }
 
-    /// <summary>Abandon a swing in progress. Called on death so IsAttacking cannot stay stuck on.</summary>
+    /// <summary>
+    /// Abandon a swing in progress. Called on death so IsAttacking cannot stay stuck on,
+    /// and by the parry when it cuts a recovery short. The cooldown is deliberately left
+    /// running: refunding it would turn parry-cancelling into a way to swing faster.
+    /// </summary>
     public void CancelAttack()
     {
         StopAllCoroutines();
         IsAttacking = false;
-        nextAttackTime = 0f;
+        IsCommitted = false;
     }
 
     private IEnumerator AttackRoutine()
     {
         // 1. Open the attack (this locks movement via PepperController)
         IsAttacking = true;
+        IsCommitted = true;
         lastSwingKilled = false;
         OnAttackStarted?.Invoke();
 
@@ -142,7 +155,10 @@ public class PepperCombat : MonoBehaviour
             }
         }
 
-        // 5. Play out the rest of the swing
+        // 5. Play out the rest of the swing. The hit has resolved, so from here the parry
+        //    may interrupt - see IsCommitted.
+        IsCommitted = false;
+
         float recovery = attackDuration - windup;
         if (recovery > 0f) yield return new WaitForSeconds(recovery);
 

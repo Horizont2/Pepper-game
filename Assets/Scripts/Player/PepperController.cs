@@ -32,6 +32,12 @@ public class PepperController : MonoBehaviour
     [SerializeField] private float fallMultiplier = 2.5f;
     [SerializeField] private float lowJumpMultiplier = 2f;
     [SerializeField] private float jumpCooldown = 0.2f;
+    [Tooltip("Terminal fall speed. Nothing capped the fall before, so gravity 3 and a 2.5x " +
+             "fall multiplier compound to 44 units/s^2 and a two-unit drop already moves the " +
+             "body further in one physics step than the ledge-grab probes are tall - the Pepper " +
+             "would fall straight past a ledge it was holding into. It also keeps long drops " +
+             "readable instead of a blur.")]
+    [SerializeField] private float maxFallSpeed = 10f;
 
     [Header("AAA Polish (Game Feel)")]
     [Tooltip("Grace period after walking off a ledge where a jump still counts.")]
@@ -507,6 +513,13 @@ public class PepperController : MonoBehaviour
         else if (rb.linearVelocity.y > 0 && !jumpHeld)
         {
             rb.linearVelocity += Vector2.up * Physics2D.gravity.y * (lowJumpMultiplier - 1) * Time.fixedDeltaTime;
+        }
+
+        // Terminal velocity, applied last so it caps whatever the multipliers added. The
+        // wall slide has its own, tighter cap and returns before reaching here.
+        if (maxFallSpeed > 0f && rb.linearVelocity.y < -maxFallSpeed)
+        {
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, -maxFallSpeed);
         }
     }
 

@@ -15,14 +15,29 @@ public class ParallaxLayer : MonoBehaviour
     [SerializeField] private Transform cameraTransform;
 
     [Header("Parallax")]
-    [Tooltip("0 = pinned to the camera (infinitely far away). 1 = moves with the world (no parallax). " +
-             "Sky sits near 0.1, mid-ground near 0.5.")]
+    [Tooltip("How much of the camera's travel this layer copies.\n\n" +
+             "0 = sits still in the world, so it scrolls past at the FULL speed of the " +
+             "foreground - that is the near plane, not the far one.\n" +
+             "1 = travels with the camera, so it never scrolls - infinitely far away.\n\n" +
+             "On-screen scroll speed is (1 - factor). Distant layers therefore want a HIGH " +
+             "number: sky around 0.93, nearest background around 0.35.")]
     [Range(0f, 1f)]
-    [SerializeField] private float parallaxFactor = 0.3f;
+    [SerializeField] private float parallaxFactor = 0.5f;
 
-    [Tooltip("Apply the effect vertically as well. Usually off for a side-scroller - vertical " +
-             "parallax makes the horizon slide around when the player jumps.")]
-    [SerializeField] private bool affectY;
+    [Tooltip("The same thing for vertical camera travel, kept separate because a side-scroller " +
+             "moves up and down far more abruptly than it moves sideways. 1 pins the layer to " +
+             "the camera vertically - no vertical drift at all, which is the safe choice - and " +
+             "matching parallaxFactor gives the physically correct amount. Somewhere between " +
+             "the two reads best: a little vertical give sells the depth without the horizon " +
+             "swinging every time the Pepper jumps.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float verticalFactor = 1f;
+
+    [Header("Drift")]
+    [Tooltip("World units per second this layer slides on its own, regardless of the camera. " +
+             "A small negative value gives clouds a breeze; everything anchored to the ground " +
+             "should leave this at zero.")]
+    [SerializeField] private float autoScrollSpeed;
 
     [Header("Infinite Scroll")]
     [Tooltip("Snap the layer back by one texture width once the camera has travelled that far, " +
@@ -38,6 +53,7 @@ public class ParallaxLayer : MonoBehaviour
     // fixed origin each frame cannot drift and self-corrects after any jump.
     private Vector3 startPosition;
     private Vector3 startCameraPosition;
+    private float drift;
 
     private void Awake()
     {
@@ -75,16 +91,23 @@ public class ParallaxLayer : MonoBehaviour
 
         Vector3 target = startPosition + new Vector3(
             travel.x * parallaxFactor,
-            affectY ? travel.y * parallaxFactor : 0f,
+            travel.y * verticalFactor,
             0f);
+
+        // Drift is a running total on purpose: it is the one part of this that is meant to
+        // accumulate, and it has no camera position to measure itself against.
+        drift += autoScrollSpeed * Time.deltaTime;
 
         if (infiniteScroll && tileWidth > 0f)
         {
-            // The layer falls behind the camera at (1 - factor) of its travel. Shifting
-            // by whole tiles cancels that out, and is seamless if the art tiles.
-            float lag = travel.x * (1f - parallaxFactor);
-            target.x += Mathf.Round(lag / tileWidth) * tileWidth;
+            // On screen the layer slides by (1 - factor) of the camera's travel, plus
+            // whatever it has drifted. Shifting the world position by whole tiles cancels
+            // that out, and is seamless as long as the art tiles.
+            float slide = travel.x * (1f - parallaxFactor) - drift;
+            target.x += Mathf.Round(slide / tileWidth) * tileWidth;
         }
+
+        target.x += drift;
 
         transform.position = target;
     }
