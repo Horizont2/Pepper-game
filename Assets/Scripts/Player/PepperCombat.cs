@@ -17,9 +17,9 @@ public class PepperCombat : MonoBehaviour
     [SerializeField] private PepperParry parry;
     [Tooltip("Lives on the Main Camera, so this is assigned on the scene instance, not the prefab.")]
     [SerializeField] private GameFeelManager gameFeel;
-    [Tooltip("Optional burst played where the swing connects. A child of attackPoint, so it " +
-             "already sits in the right place and needs no spawning.")]
-    [SerializeField] private ParticleSystem hitEffect;
+    [Tooltip("Burst played where the swing connects. A child of attackPoint, so it already " +
+             "sits in the right place and needs no spawning.")]
+    [SerializeField] private SpriteSheetEffect hitEffect;
     [Tooltip("Arc drawn as the swing starts, whether or not it lands. Without it the attack " +
              "is invisible until it hits something.")]
     [SerializeField] private SpriteSheetEffect swingEffect;
@@ -73,10 +73,6 @@ public class PepperCombat : MonoBehaviour
 
         if (gameFeel == null)
             Debug.LogWarning($"[PepperCombat] gameFeel is not assigned on '{name}'; hits will land without hit stop or shake.", this);
-
-        // Cartoon FX systems ship with Play On Awake set, so they would fire once on
-        // load. Clear it here rather than unticking it on every sub-emitter by hand.
-        if (hitEffect != null) hitEffect.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
     }
 
     private void Update()
@@ -150,8 +146,8 @@ public class PepperCombat : MonoBehaviour
             if (hitEffect != null)
             {
                 // Restart rather than queue: two quick hits should each get their own burst
-                hitEffect.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-                hitEffect.Play(true);
+                hitEffect.gameObject.SetActive(true);
+                hitEffect.Play();
             }
         }
 

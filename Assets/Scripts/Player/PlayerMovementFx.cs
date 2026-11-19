@@ -28,6 +28,9 @@ public class PlayerMovementFx : MonoBehaviour
     [SerializeField] private SpriteSheetEffect wallSlideEffect;
     [Tooltip("Periodic puff while running. Gives the ground something to say back.")]
     [SerializeField] private SpriteSheetEffect runEffect;
+    [Tooltip("Small puff at the hands when a ledge is caught. The catch is otherwise the " +
+             "one move in the set that happens in total silence.")]
+    [SerializeField] private SpriteSheetEffect ledgeGrabEffect;
 
     [Header("Running")]
     [Tooltip("Seconds between running puffs. Too short and it is a smoke trail.")]
@@ -56,6 +59,7 @@ public class PlayerMovementFx : MonoBehaviour
         controller.OnLanded += HandleLanded;
         controller.OnDashed += PlayDash;
         controller.OnWallJumped += PlayWallJump;
+        controller.OnLedgeGrabbed += PlayLedgeGrab;
     }
 
     private void OnDisable()
@@ -65,6 +69,7 @@ public class PlayerMovementFx : MonoBehaviour
         controller.OnLanded -= HandleLanded;
         controller.OnDashed -= PlayDash;
         controller.OnWallJumped -= PlayWallJump;
+        controller.OnLedgeGrabbed -= PlayLedgeGrab;
     }
 
     private float runDustTimer;
@@ -133,6 +138,8 @@ public class PlayerMovementFx : MonoBehaviour
     }
 
     private void PlayWallJump() => Fire(wallJumpEffect);
+
+    private void PlayLedgeGrab() => Fire(ledgeGrabEffect);
 
     // The effects are children of the Pepper, and the Pepper turns by mirroring its own
     // transform, so every child is already mirrored with the facing. Flipping the sprite

@@ -108,6 +108,7 @@ public class AudioManager : MonoBehaviour
         if (playerHealth != null)
         {
             playerHealth.OnDamaged += HandlePlayerDamaged;
+            playerHealth.OnHealed += HandlePlayerHealed;
             playerHealth.OnDied += PlayPlayerDeath;
         }
 
@@ -142,6 +143,7 @@ public class AudioManager : MonoBehaviour
         if (playerHealth != null)
         {
             playerHealth.OnDamaged -= HandlePlayerDamaged;
+            playerHealth.OnHealed -= HandlePlayerHealed;
             playerHealth.OnDied -= PlayPlayerDeath;
         }
 
@@ -175,6 +177,7 @@ public class AudioManager : MonoBehaviour
     public void PlayHeal() => Play(heal);
 
     private void HandlePlayerDamaged(Vector2 sourcePosition) => Play(playerHurt);
+    private void HandlePlayerHealed(int amount) => PlayHeal();
     private void PlayPlayerDeath() => Play(playerDeathSound);
     private void HandleResourcesChanged(int amount) => Play(pickupResource);
 

@@ -15,7 +15,9 @@ does. Flat shading rather than a gradient matters at this size: these are 20-odd
 across and in motion, and anything subtler than one highlight is mud.
 """
 
+import math
 import os
+
 from PIL import Image, ImageDraw
 
 SUPERSAMPLE = 6
@@ -87,6 +89,96 @@ def render(name):
 
 
 AMBIENT_OUT = "Assets/Art/Effects/Ambient"
+IMPACT_OUT = "Assets/Art/Effects/Impact"
+
+# Warm all the way through. The kitchen these effects live in is lit by gas and copper, and
+# a cold highlight in the middle of it reads as belonging to a different game.
+HOT = (0xFF, 0xF2, 0xD6, 255)      # core, barely coloured
+MID = (0xFF, 0xA8, 0x3C, 255)      # the body of the flash
+EDGE = (0xD1, 0x36, 0x22, 255)     # paprika, at the tips where it cools
+
+
+def _lerp(a, b, t):
+    return a + (b - a) * t
+
+
+def _fade(image, alpha):
+    if alpha >= 1.0:
+        return image
+    image.putalpha(image.getchannel("A").point(lambda v: int(v * alpha)))
+    return image
+
+
+def impact_frame(size, step, steps, spikes=9):
+    """
+    One frame of a cartoon impact starburst: tapered spikes off a bright core.
+
+    The spikes alternate long and short. Evenly sized ones draw a cog, and the eye reads a
+    cog as a wheel rather than as a blow landing.
+    """
+    t = step / (steps - 1)
+    box = size * SUPERSAMPLE
+    image = Image.new("RGBA", (box, box), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    c = box / 2.0
+
+    outer = _lerp(0.22, 0.50, t) * box
+    base = _lerp(0.11, 0.15, t) * box    # where a spike is widest
+    taper = _lerp(0.52, 0.14, t)         # how wide a spike is there
+    spin = t * 0.22                      # a little rotation so it never sits still
+
+    # The core collapses as the spikes throw outward. Growing it instead leaves a pale
+    # disc sitting in the middle of the burst, which reads as a hole punched in the frame.
+    core = _lerp(0.19, 0.0, min(1.0, t * 1.4)) * box
+
+    for colour, reach in ((EDGE, 1.0), (MID, 0.74), (HOT, 0.40)):
+        for i in range(spikes):
+            a = (i / spikes + spin) * math.tau
+            length = outer * reach * (1.0 if i % 2 == 0 else 0.68)
+            half = (math.tau / spikes) * 0.5 * taper
+            draw.polygon([
+                (c + math.cos(a) * length, c + math.sin(a) * length),
+                (c + math.cos(a + half) * base, c + math.sin(a + half) * base),
+                (c + math.cos(a - half) * base, c + math.sin(a - half) * base),
+            ], fill=colour)
+
+    if core > 0.5:
+        draw.ellipse([c - core, c - core, c + core, c + core], fill=HOT)
+
+    # Opaque while it reads, then out - but never all the way, or the last frame is a
+    # blank sprite sitting in the array doing nothing.
+    alpha = 1.0 if t < 0.45 else _lerp(1.0, 0.16, (t - 0.45) / 0.55)
+    return _fade(image.resize((size, size), Image.LANCZOS), alpha)
+
+
+def ring_frame(size, step, steps):
+    """
+    One frame of an expanding ring: the parry throwing a blow back off.
+
+    A ring says "pushed away from here" in a way a burst cannot - a burst is something
+    breaking, and a parry is the opposite of that.
+    """
+    t = step / (steps - 1)
+    box = size * SUPERSAMPLE
+    image = Image.new("RGBA", (box, box), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    c = box / 2.0
+
+    radius = _lerp(0.13, 0.47, t) * box
+    thickness = _lerp(0.13, 0.022, t) * box
+
+    for colour, grow in ((EDGE, 1.25), (MID, 1.0), (HOT, 0.55)):
+        r = radius
+        w = thickness * grow
+        draw.ellipse([c - r - w, c - r - w, c + r + w, c + r + w], fill=colour)
+
+    # Punch the middle out last, so every layer is cut by the same hole
+    hole = radius - thickness * 0.5
+    if hole > 0:
+        draw.ellipse([c - hole, c - hole, c + hole, c + hole], fill=(0, 0, 0, 0))
+
+    alpha = 1.0 if t < 0.3 else _lerp(1.0, 0.14, (t - 0.3) / 0.7)
+    return _fade(image.resize((size, size), Image.LANCZOS), alpha)
 
 
 def mote(size, softness):
@@ -114,6 +206,9 @@ def mote(size, softness):
 
 MOTES = {"mote-soft": (24, 1.6), "mote-fleck": (10, 0.7)}
 
+IMPACT_SIZE, IMPACT_FRAMES = 64, 6
+RING_SIZE, RING_FRAMES = 72, 6
+
 
 def main():
     os.makedirs(OUT, exist_ok=True)
@@ -127,6 +222,17 @@ def main():
         path = os.path.join(AMBIENT_OUT, name + ".png")
         mote(size, softness).save(path)
         print(f"  {path}  {size}x{size}")
+
+    os.makedirs(IMPACT_OUT, exist_ok=True)
+    for i in range(IMPACT_FRAMES):
+        path = os.path.join(IMPACT_OUT, f"impact-burst-{i + 1}.png")
+        impact_frame(IMPACT_SIZE, i, IMPACT_FRAMES).save(path)
+    print(f"  {IMPACT_OUT}/impact-burst-1..{IMPACT_FRAMES}.png  {IMPACT_SIZE}x{IMPACT_SIZE}")
+
+    for i in range(RING_FRAMES):
+        path = os.path.join(IMPACT_OUT, f"parry-ring-{i + 1}.png")
+        ring_frame(RING_SIZE, i, RING_FRAMES).save(path)
+    print(f"  {IMPACT_OUT}/parry-ring-1..{RING_FRAMES}.png  {RING_SIZE}x{RING_SIZE}")
 
 
 if __name__ == "__main__":

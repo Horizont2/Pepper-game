@@ -27,6 +27,10 @@ public class HealthComponent : MonoBehaviour
 
     public event Action OnDied;
 
+    /// <summary>Raised when health actually went up. Carries how much landed, which is not
+    /// what was asked for when the bar was already near full.</summary>
+    public event Action<int> OnHealed;
+
     /// <summary>
     /// Lets a defensive move cancel a hit before any of it is applied - a parry today,
     /// a shield later. Each subscriber is asked in turn and the first to return true
@@ -108,8 +112,13 @@ public class HealthComponent : MonoBehaviour
     {
         if (!IsAlive) return;
 
+        int before = currentHealth;
         currentHealth = Mathf.Clamp(currentHealth + healAmount, 0, maxHealth);
 
+        int gained = currentHealth - before;
+        if (gained <= 0) return;   // already full: nothing happened, so say nothing happened
+
+        OnHealed?.Invoke(gained);
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
     }
 

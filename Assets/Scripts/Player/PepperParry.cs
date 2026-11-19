@@ -23,8 +23,8 @@ public class PepperParry : MonoBehaviour
     [SerializeField] private PepperCombat combat;
     [Tooltip("Lives on the Main Camera, so this is assigned on the scene instance, not the prefab.")]
     [SerializeField] private GameFeelManager gameFeel;
-    [Tooltip("Optional burst on a successful parry. A child of the Pepper, so it needs no spawning.")]
-    [SerializeField] private ParticleSystem parryEffect;
+    [Tooltip("Ring thrown off a successful parry. A child of the Pepper, so it needs no spawning.")]
+    [SerializeField] private SpriteSheetEffect parryEffect;
 
     [Header("Readability")]
     [Tooltip("Tinted for exactly as long as hits are being cancelled, so the window is something " +
@@ -95,10 +95,6 @@ public class PepperParry : MonoBehaviour
 
         if (parryPoint == null)
             Debug.LogWarning($"[PepperParry] parryPoint is not assigned on '{name}'; a successful parry will not stagger anything.", this);
-
-        // Cartoon FX systems ship with Play On Awake set, so they would fire once on
-        // load. Clear it here rather than unticking it on every sub-emitter by hand.
-        if (parryEffect != null) parryEffect.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
     }
 
     private void OnEnable()
@@ -203,8 +199,8 @@ public class PepperParry : MonoBehaviour
 
         if (parryEffect != null)
         {
-            parryEffect.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-            parryEffect.Play(true);
+            parryEffect.gameObject.SetActive(true);
+            parryEffect.Play();
         }
 
         StaggerEnemiesInRange();

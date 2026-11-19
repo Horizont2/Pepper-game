@@ -23,6 +23,10 @@ public class HitFeedback : MonoBehaviour
     [Tooltip("Optional. Bits thrown off by a hit - pepper flesh on the Pepper, crumbs on " +
              "anything else. A flash and a shove say a hit happened; this says what was hit.")]
     [SerializeField] private DebrisBurst debris;
+    [Tooltip("Optional. Played when health goes up. Taking a hit is loud and being patched " +
+             "up was silent, which made a health pickup feel like it had not worked.")]
+    [SerializeField] private SpriteSheetEffect healEffect;
+    [SerializeField] private Color healColor = new Color(0.55f, 1f, 0.62f, 1f);
 
     [Header("Camera (only when gameFeel is set)")]
     [SerializeField] private float hitStopDuration = 0.04f;
@@ -78,12 +82,33 @@ public class HitFeedback : MonoBehaviour
 
     private void OnEnable()
     {
-        if (health != null) health.OnDamaged += HandleDamaged;
+        if (health == null) return;
+
+        health.OnDamaged += HandleDamaged;
+        health.OnHealed += HandleHealed;
     }
 
     private void OnDisable()
     {
-        if (health != null) health.OnDamaged -= HandleDamaged;
+        if (health == null) return;
+
+        health.OnDamaged -= HandleDamaged;
+        health.OnHealed -= HandleHealed;
+    }
+
+    private void HandleHealed(int amount)
+    {
+        if (healEffect != null)
+        {
+            healEffect.gameObject.SetActive(true);
+            healEffect.Play();
+        }
+
+        if (spriteRenderer == null || isStaggered) return;
+
+        // Reuses the flash, so a heal and a hit can never be on the sprite at once
+        if (flashRoutine != null) StopCoroutine(flashRoutine);
+        flashRoutine = StartCoroutine(FlashRoutine(healColor));
     }
 
     /// <summary>
@@ -158,7 +183,7 @@ public class HitFeedback : MonoBehaviour
         if (spriteRenderer != null && !isStaggered)
         {
             if (flashRoutine != null) StopCoroutine(flashRoutine);
-            flashRoutine = StartCoroutine(FlashRoutine());
+            flashRoutine = StartCoroutine(FlashRoutine(flashColor));
         }
 
         if (rb != null)
@@ -168,9 +193,9 @@ public class HitFeedback : MonoBehaviour
         }
     }
 
-    private IEnumerator FlashRoutine()
+    private IEnumerator FlashRoutine(Color colour)
     {
-        spriteRenderer.color = flashColor;
+        spriteRenderer.color = colour;
 
         // Unscaled, so the flash is still visible through the hit stop freeze -
         // which is exactly the frame the player is looking at
