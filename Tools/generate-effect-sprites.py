@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Generates the debris sprites used by DebrisBurst.
+Generates the sprites used by DebrisBurst and AmbientDrifters.
 
 Lives outside Assets/ on purpose: Unity never imports it, and the art it writes is
 checked in, so this only needs running when someone wants to retune the shapes or the
 palette. Run it from the repository root:
 
-    python3 Tools/generate-debris-sprites.py
+    python3 Tools/generate-effect-sprites.py
 
 Every piece is one closed polygon drawn three times - an expanded outline, a flat fill,
 then a smaller offset highlight - at 6x and downsampled. That is the whole look: soft
@@ -86,12 +86,47 @@ def render(name):
     return image.resize((w, h), Image.LANCZOS)
 
 
+AMBIENT_OUT = "Assets/Art/Effects/Ambient"
+
+
+def mote(size, softness):
+    """
+    A round mote, white so AmbientDrifters can tint each one from its own palette.
+
+    Alpha falls off as a power curve rather than linearly: linear gives a flat disc with a
+    visible rim, and these have to read as something hanging in the light rather than a
+    sticker. A high softness is airborne dust, a low one is a speck of ground spice.
+    """
+    box = size * SUPERSAMPLE
+    image = Image.new("RGBA", (box, box), (255, 255, 255, 0))
+    pixels = image.load()
+    centre = (box - 1) / 2.0
+
+    for y in range(box):
+        for x in range(box):
+            d = ((x - centre) ** 2 + (y - centre) ** 2) ** 0.5 / centre
+            if d >= 1.0:
+                continue
+            pixels[x, y] = (255, 255, 255, int(255 * (1.0 - d) ** softness))
+
+    return image.resize((size, size), Image.LANCZOS)
+
+
+MOTES = {"mote-soft": (24, 1.6), "mote-fleck": (10, 0.7)}
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     for name in SHAPES:
         path = os.path.join(OUT, name + ".png")
         render(name).save(path)
         print(f"  {path}  {SIZES[name][0]}x{SIZES[name][1]}")
+
+    os.makedirs(AMBIENT_OUT, exist_ok=True)
+    for name, (size, softness) in MOTES.items():
+        path = os.path.join(AMBIENT_OUT, name + ".png")
+        mote(size, softness).save(path)
+        print(f"  {path}  {size}x{size}")
 
 
 if __name__ == "__main__":

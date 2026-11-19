@@ -65,6 +65,13 @@ public class AudioManager : MonoBehaviour
     [SerializeField] private GameSound levelMusic = new GameSound();
     [SerializeField] private bool playMusicOnStart = true;
 
+    [Header("Ambience")]
+    [Tooltip("The room under everything else - extractor hum, a pan on the boil, the fridge. " +
+             "Its own source, so it holds while music starts, stops or changes track.")]
+    [SerializeField] private GameSound ambience = new GameSound();
+    [SerializeField] private AudioSource ambienceSource;
+    [SerializeField] private bool playAmbienceOnStart = true;
+
     [Header("Player Hookup")]
     [Tooltip("Assigned once on the scene's player. Everything under Player above wires itself from these.")]
     [SerializeField] private HealthComponent playerHealth;
@@ -145,6 +152,7 @@ public class AudioManager : MonoBehaviour
     private void Start()
     {
         if (playMusicOnStart) PlayMusic(levelMusic);
+        if (playAmbienceOnStart) PlayAmbience(ambience);
     }
 
     // --- player, wired above -------------------------------------------------
@@ -220,5 +228,24 @@ public class AudioManager : MonoBehaviour
     public void StopMusic()
     {
         if (musicSource != null) musicSource.Stop();
+    }
+
+    /// <summary>
+    /// The room's own loop, on a separate source from the music so the two are independent -
+    /// a music cue starting or a track changing must not take the room with it.
+    /// </summary>
+    public void PlayAmbience(GameSound bed)
+    {
+        if (bed == null || bed.clip == null || ambienceSource == null) return;
+
+        ambienceSource.clip = bed.clip;
+        ambienceSource.volume = bed.volume * masterVolume;
+        ambienceSource.loop = true;
+        ambienceSource.Play();
+    }
+
+    public void StopAmbience()
+    {
+        if (ambienceSource != null) ambienceSource.Stop();
     }
 }
