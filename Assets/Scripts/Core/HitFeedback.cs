@@ -20,6 +20,9 @@ public class HitFeedback : MonoBehaviour
     [SerializeField] private Rigidbody2D rb;
     [Tooltip("Optional. Set on the player so taking a hit shakes the camera, not just the sprite.")]
     [SerializeField] private GameFeelManager gameFeel;
+    [Tooltip("Optional. Bits thrown off by a hit - pepper flesh on the Pepper, crumbs on " +
+             "anything else. A flash and a shove say a hit happened; this says what was hit.")]
+    [SerializeField] private DebrisBurst debris;
 
     [Header("Camera (only when gameFeel is set)")]
     [SerializeField] private float hitStopDuration = 0.04f;
@@ -141,12 +144,16 @@ public class HitFeedback : MonoBehaviour
 
     private void HandleDamaged(Vector2 sourcePosition)
     {
+        Vector2 away = (Vector2)transform.position - sourcePosition;
+
         // Taking a hit should be as loud as landing one, and shoved the way it threw us
         if (gameFeel != null)
         {
-            Vector2 away = (Vector2)transform.position - sourcePosition;
             gameFeel.TriggerHitImpact(hitStopDuration, shakeDuration, shakeMagnitude, away);
         }
+
+        // Thrown the same way the blow went, so the spray reads as coming off the impact
+        if (debris != null) debris.Play(away);
 
         if (spriteRenderer != null && !isStaggered)
         {

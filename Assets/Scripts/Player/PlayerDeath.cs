@@ -21,6 +21,9 @@ public class PlayerDeath : MonoBehaviour
     [SerializeField] private PepperAnimator animatorDriver;
     [Tooltip("Where the Pepper comes back. A scene object, so it is assigned on the instance.")]
     [SerializeField] private Transform respawnPoint;
+    [Tooltip("Optional. Switched on as the Pepper dies and off again on respawn - it fires " +
+             "itself when enabled. More of it, thrown further, than a hit throws off.")]
+    [SerializeField] private GameObject deathDebris;
 
     [Header("Timing")]
     [Tooltip("How long the death is held before the respawn. Death.anim runs about 1.1s.")]
@@ -89,6 +92,10 @@ public class PlayerDeath : MonoBehaviour
         IsDead = true;
         OnDied?.Invoke();
 
+        // The Pepper comes apart. Switched on rather than told to play, so the burst
+        // decides for itself what that means - see DebrisBurst.playOnEnable.
+        if (deathDebris != null) deathDebris.SetActive(true);
+
         // Cancel before disabling. A disabled component's coroutine is not guaranteed to
         // stop, and a dash left half-finished would restore its gravity change after the
         // respawn had already happened.
@@ -115,6 +122,10 @@ public class PlayerDeath : MonoBehaviour
     /// <summary>Put the Pepper back on its feet. Safe to call directly for a debug respawn.</summary>
     public void Respawn()
     {
+        // Off again, or the next death switches on something that is already on and the
+        // burst never replays
+        if (deathDebris != null) deathDebris.SetActive(false);
+
         if (respawnPoint != null) transform.position = respawnPoint.position;
 
         if (rb != null)
