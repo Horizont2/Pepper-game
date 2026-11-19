@@ -90,6 +90,13 @@ public class HitFeedback : MonoBehaviour
 
     private void OnDisable()
     {
+        // As on the AI: a disabled component keeps running its coroutines, so a knockback
+        // or a tell started before death would go on writing to a corpse.
+        StopAllCoroutines();
+        flashRoutine = knockbackRoutine = staggerRoutine = tellRoutine = null;
+        isKnockedBack = false;
+        isStaggered = false;
+
         if (health == null) return;
 
         health.OnDamaged -= HandleDamaged;

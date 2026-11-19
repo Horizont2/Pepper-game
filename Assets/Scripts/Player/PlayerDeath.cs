@@ -24,6 +24,14 @@ public class PlayerDeath : MonoBehaviour
     [Tooltip("Optional. Switched on as the Pepper dies and off again on respawn - it fires " +
              "itself when enabled. More of it, thrown further, than a hit throws off.")]
     [SerializeField] private GameObject deathDebris;
+    [Tooltip("Optional. The Cinemachine camera, switched off and on again after a respawn.\n\n" +
+             "A respawn teleports the Pepper, often several units up out of a pit. The camera " +
+             "then eases after it and stops the moment it re-enters the composer's dead zone - " +
+             "at its EDGE, not its middle - which on a dead zone half a screen tall leaves the " +
+             "view sitting about a unit low for the rest of the life. Re-activating the camera " +
+             "makes its Center On Activate setting put the Pepper back in the middle.\n\n" +
+             "Typed as a plain Behaviour on purpose, so this file needs no Cinemachine reference.")]
+    [SerializeField] private Behaviour cameraToRecentre;
 
     [Header("Timing")]
     [Tooltip("How long the death is held before the respawn. Death.anim runs about 1.1s.")]
@@ -87,6 +95,17 @@ public class PlayerDeath : MonoBehaviour
         StartCoroutine(DeathRoutine());
     }
 
+    private IEnumerator RecentreCamera()
+    {
+        cameraToRecentre.enabled = false;
+
+        // A frame with no live camera, so switching it back on registers as an activation
+        // rather than as nothing having changed
+        yield return null;
+
+        cameraToRecentre.enabled = true;
+    }
+
     private IEnumerator DeathRoutine()
     {
         IsDead = true;
@@ -136,6 +155,8 @@ public class PlayerDeath : MonoBehaviour
 
         if (health != null) health.Revive();
         if (animatorDriver != null) animatorDriver.ResetDeath();
+
+        if (cameraToRecentre != null) StartCoroutine(RecentreCamera());
 
         SetControlEnabled(true);
 

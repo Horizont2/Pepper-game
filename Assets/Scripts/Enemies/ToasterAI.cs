@@ -186,6 +186,14 @@ public class ToasterAI : MonoBehaviour
 
     private void OnDisable()
     {
+        // Disabling a MonoBehaviour does not stop its coroutines - only deactivating the
+        // GameObject does. A swing already in flight when the enemy died therefore carried
+        // on through its wind-up and dealt its damage from beyond the grave.
+        StopAllCoroutines();
+        isAttacking = false;
+        isAlerting = false;
+        shoveUntil = 0f;
+
         if (health == null) return;
 
         health.OnDied -= HandleDeath;
@@ -487,7 +495,9 @@ public class ToasterAI : MonoBehaviour
             {
                 if (logDecisions) Debug.Log($"[ToasterAI] {name}: swing hit '{hit.name}' but it has no HealthComponent", this);
             }
-            else
+            // Belt and braces for the one frame where the enemy dies between the swing
+            // starting and the hit resolving, which StopAllCoroutines cannot catch
+            else if (health == null || health.IsAlive)
             {
                 playerHealth.TakeDamage(attackDamage, transform.position);
                 OnAttackLanded?.Invoke();

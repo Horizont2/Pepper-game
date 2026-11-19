@@ -288,7 +288,7 @@ MonoBehaviour:
   jumpForce: 8
   fallMultiplier: 2.5
   lowJumpMultiplier: 2
-  jumpCooldown: 0.5
+  jumpCooldown: 0.1
   maxFallSpeed: 10
   coyoteTime: 0.15
   jumpBufferTime: 0.1
@@ -516,6 +516,7 @@ MonoBehaviour:
   animatorDriver: {fileID: 6155688484261038520}
   respawnPoint: {fileID: 0}
   deathDebris: {fileID: 8870000000000000001}
+  cameraToRecentre: {fileID: 0}
   deathHold: 1.2
   fallKillY: -5
 --- !u!114 &2370418495893030954

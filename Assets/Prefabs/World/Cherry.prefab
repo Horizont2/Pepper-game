@@ -169,12 +169,15 @@ MonoBehaviour:
   consumeWhenFullHealth: 0
   trigger: {fileID: 6200000000000000005}
   spriteRenderer: {fileID: 6200000000000000003}
+  bodyAnimator: {fileID: 6200000000000000004}
   collectFx: {fileID: 6200000000000000007}
   playerLayer:
     serializedVersion: 2
     m_Bits: 256
   bobHeight: 0.04
   bobSpeed: 2
+  refuseHeight: 0.09
+  refuseDuration: 0.22
   destroyDelay: 0.5
 --- !u!1 &6200000000000000007
 GameObject:
@@ -186,7 +189,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6200000000000000008}
   - component: {fileID: 6200000000000000009}
-  - component: {fileID: 6200000000000000010}
+  - component: {fileID: 6200000000000000011}
   m_Layer: 0
   m_Name: CollectFx
   m_TagString: Untagged
@@ -257,8 +260,8 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 8
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 1a4497d8531b845f185bb7742441138d, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Sprite: {fileID: 21300000, guid: 0aa9ef7b9f9680958ac1464dc4875acf, type: 3}
+  m_Color: {r: 0.55, g: 1, b: 0.62, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -267,25 +270,28 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
---- !u!95 &6200000000000000010
-Animator:
-  serializedVersion: 7
+--- !u!114 &6200000000000000011
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6200000000000000007}
   m_Enabled: 1
-  m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: 6dab642fce51f72458f1cfacf5d45d8e, type: 2}
-  m_CullingMode: 0
-  m_UpdateMode: 0
-  m_ApplyRootMotion: 0
-  m_LinearVelocityBlending: 0
-  m_StabilizeFeet: 0
-  m_AnimatePhysics: 0
-  m_WarningMessage: 
-  m_HasTransformHierarchy: 1
-  m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorStateOnDisable: 0
-  m_WriteDefaultValuesOnDisable: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c7622915493a4c4ea3bc21161776b29d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpriteSheetEffect
+  target: {fileID: 6200000000000000009}
+  frames:
+  - {fileID: 21300000, guid: 0aa9ef7b9f9680958ac1464dc4875acf, type: 3}
+  - {fileID: 21300000, guid: 7e1720e028dfbd8f724af424aab486f7, type: 3}
+  - {fileID: 21300000, guid: fe296d05a22dc715a761661275d4fdac, type: 3}
+  - {fileID: 21300000, guid: f17077f396acdc98ae91c891a76cac28, type: 3}
+  - {fileID: 21300000, guid: 6ee2884a83687d72de8bd66cdba7a1d7, type: 3}
+  - {fileID: 21300000, guid: 18fe4e0e54c5aada165e183eea6752d8, type: 3}
+  framesPerSecond: 22
+  loop: 0
+  playOnEnable: 1
+  hideWhenFinished: 1
+  flipX: 0
