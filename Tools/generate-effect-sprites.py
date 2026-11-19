@@ -151,6 +151,52 @@ def impact_frame(size, step, steps, spikes=9):
     return _fade(image.resize((size, size), Image.LANCZOS), alpha)
 
 
+STEAM_LIGHT = (0xF7, 0xF0, 0xE4, 255)
+STEAM_SHADE = (0xD6, 0xC7, 0xB2, 255)
+
+# Fixed layout, so the puff is the same cloud moving rather than a new one each frame.
+# Angles are uneven on purpose: evenly spaced blobs make a flower.
+STEAM_BLOBS = [
+    (-0.30, 0.30, 1.05), (0.55, 0.62, 0.86), (1.45, 0.95, 0.78),
+    (2.35, 0.55, 0.92), (3.05, 0.88, 0.70), (3.95, 0.72, 0.82),
+    (5.05, 0.45, 0.74),
+]
+
+
+def steam_frame(size, step, steps):
+    """
+    One frame of a puff of steam venting and thinning out.
+
+    This is what a kitchen appliance does when it stops working, and it has to read as
+    clearly NOT an explosion. The difference is entirely in the motion: a blast expands
+    fast and evenly and hollows into a ring, while steam rises, drifts apart slowly and
+    thins. So the cloud here moves UP across its frames and its blobs shrink as they
+    separate - at no point does it open into a ring.
+    """
+    t = step / (steps - 1)
+    box = size * SUPERSAMPLE
+    image = Image.new("RGBA", (box, box), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    c = box / 2.0
+
+    spread = _lerp(0.04, 0.40, t) * box
+    rise = _lerp(0.13, -0.30, t) * box      # screen y, so negative is upward
+    radius = _lerp(0.22, 0.07, t) * box
+    shade = radius * 0.28
+
+    for angle, distance, scale in STEAM_BLOBS:
+        x = c + math.cos(angle) * spread * distance
+        y = c + math.sin(angle) * spread * distance * 0.9 + rise
+        r = radius * scale
+
+        draw.ellipse([x - r, y - r + shade, x + r, y + r + shade], fill=STEAM_SHADE)
+        draw.ellipse([x - r, y - r, x + r, y + r], fill=STEAM_LIGHT)
+
+    # Thin from the start - steam is never opaque - and keep a trace on the last frame
+    alpha = _lerp(0.88, 0.07, t ** 1.15)
+    return _fade(image.resize((size, size), Image.LANCZOS), alpha)
+
+
 def ring_frame(size, step, steps):
     """
     One frame of an expanding ring: the parry throwing a blow back off.
@@ -208,6 +254,7 @@ MOTES = {"mote-soft": (24, 1.6), "mote-fleck": (10, 0.7)}
 
 IMPACT_SIZE, IMPACT_FRAMES = 64, 6
 RING_SIZE, RING_FRAMES = 72, 6
+STEAM_SIZE, STEAM_FRAMES = 72, 8
 
 
 def main():
@@ -233,6 +280,11 @@ def main():
         path = os.path.join(IMPACT_OUT, f"parry-ring-{i + 1}.png")
         ring_frame(RING_SIZE, i, RING_FRAMES).save(path)
     print(f"  {IMPACT_OUT}/parry-ring-1..{RING_FRAMES}.png  {RING_SIZE}x{RING_SIZE}")
+
+    for i in range(STEAM_FRAMES):
+        path = os.path.join(IMPACT_OUT, f"steam-puff-{i + 1}.png")
+        steam_frame(STEAM_SIZE, i, STEAM_FRAMES).save(path)
+    print(f"  {IMPACT_OUT}/steam-puff-1..{STEAM_FRAMES}.png  {STEAM_SIZE}x{STEAM_SIZE}")
 
 
 if __name__ == "__main__":
