@@ -306,7 +306,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   wallSlideSpeed: 1.2
-  wallJumpForce: {x: 4, y: 8}
+  wallJumpForce: {x: 6, y: 10}
   wallJumpLockTime: 0.18
   wallCoyoteTime: 0.12
   ledgeCheck: {fileID: 8850000000000000002}
