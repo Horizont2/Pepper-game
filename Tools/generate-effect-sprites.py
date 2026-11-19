@@ -151,6 +151,48 @@ def impact_frame(size, step, steps, spikes=9):
     return _fade(image.resize((size, size), Image.LANCZOS), alpha)
 
 
+ALERT_FILL = (0xFF, 0xC4, 0x2E, 255)
+ALERT_LIGHT = (0xFF, 0xE8, 0x9B, 255)
+ALERT_OUTLINE = (0x4A, 0x27, 0x0C, 255)
+
+
+def alert_mark(width, height):
+    """
+    The "!" that appears over an enemy the moment it notices the player.
+
+    Drawn rather than taken from a font: a font's exclamation mark is built to sit in a
+    line of text, so it is thin, and at the size this is seen on screen it disappears. This
+    one is short and heavy with a wide head, which is what survives being a few pixels tall
+    over a moving sprite.
+    """
+    w, h = width * SUPERSAMPLE, height * SUPERSAMPLE
+    image = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+
+    pad = w * 0.13
+    cx = w / 2.0
+
+    def stroke(top, bottom, half_top, half_bottom, colour):
+        draw.polygon([(cx - half_top, top), (cx + half_top, top),
+                      (cx + half_bottom, bottom), (cx - half_bottom, bottom)], fill=colour)
+
+    # Outline first as a grown copy, then the fill inside it - the same build as the debris
+    bar_top, bar_bottom = h * 0.06, h * 0.62
+    dot_top, dot_bottom = h * 0.72, h * 0.96
+
+    stroke(bar_top - pad, bar_bottom + pad, w * 0.30 + pad, w * 0.15 + pad, ALERT_OUTLINE)
+    draw.ellipse([cx - w * 0.21 - pad, dot_top - pad, cx + w * 0.21 + pad, dot_bottom + pad],
+                 fill=ALERT_OUTLINE)
+
+    stroke(bar_top, bar_bottom, w * 0.30, w * 0.15, ALERT_FILL)
+    draw.ellipse([cx - w * 0.21, dot_top, cx + w * 0.21, dot_bottom], fill=ALERT_FILL)
+
+    # One light down the left edge, matching everything else in the set
+    stroke(bar_top + h * 0.05, bar_bottom - h * 0.10, w * 0.10, w * 0.05, ALERT_LIGHT)
+
+    return image.resize((width, height), Image.LANCZOS)
+
+
 STEAM_LIGHT = (0xF7, 0xF0, 0xE4, 255)
 STEAM_SHADE = (0xD6, 0xC7, 0xB2, 255)
 
@@ -255,6 +297,7 @@ MOTES = {"mote-soft": (24, 1.6), "mote-fleck": (10, 0.7)}
 IMPACT_SIZE, IMPACT_FRAMES = 64, 6
 RING_SIZE, RING_FRAMES = 72, 6
 STEAM_SIZE, STEAM_FRAMES = 72, 8
+ALERT_W, ALERT_H = 26, 44
 
 
 def main():
@@ -285,6 +328,10 @@ def main():
         path = os.path.join(IMPACT_OUT, f"steam-puff-{i + 1}.png")
         steam_frame(STEAM_SIZE, i, STEAM_FRAMES).save(path)
     print(f"  {IMPACT_OUT}/steam-puff-1..{STEAM_FRAMES}.png  {STEAM_SIZE}x{STEAM_SIZE}")
+
+    path = os.path.join(IMPACT_OUT, "alert-mark.png")
+    alert_mark(ALERT_W, ALERT_H).save(path)
+    print(f"  {path}  {ALERT_W}x{ALERT_H}")
 
 
 if __name__ == "__main__":
